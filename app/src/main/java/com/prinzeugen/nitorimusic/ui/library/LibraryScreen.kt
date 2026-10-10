@@ -21,6 +21,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Slider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,6 +42,16 @@ fun LibraryScreen(
 ) {
     val tracks by viewModel.tracks.collectAsState()
     val playback by viewModel.playback.state.collectAsState()
+    val spread by viewModel.shuffleSpread.collectAsState()
+    var showShuffleOptions by remember { mutableStateOf(false) }
+
+    if (showShuffleOptions) {
+        ShuffleOptionsDialog(
+            spread = spread,
+            onSpreadChange = viewModel::setShuffleSpread,
+            onDismiss = { showShuffleOptions = false },
+        )
+    }
 
     Column(Modifier.fillMaxSize()) {
         if (!hasPermission) {
@@ -56,8 +72,11 @@ fun LibraryScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("${tracks.size} lagu", style = MaterialTheme.typography.titleMedium)
-                Button(onClick = viewModel::shuffleAll, enabled = tracks.isNotEmpty()) {
-                    Text("Shuffle all")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showShuffleOptions = true }) { Text("Opsi") }
+                    Button(onClick = viewModel::shuffleAll, enabled = tracks.isNotEmpty()) {
+                        Text("Shuffle all")
+                    }
                 }
             }
             LazyColumn(
