@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,7 +76,7 @@ fun QueueScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         item = item,
                         isCurrent = index == state.currentIndex,
                         onClick = { playback.jumpTo(index) },
-                        onRemove = { playback.removeAt(index) },
+                        onRemove = { playback.removeById(item.mediaId) },
                     )
                 }
             }
@@ -91,10 +92,12 @@ private fun ReorderableCollectionItemScope.QueueRow(
     onClick: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    // State swipe menyimpan lambda dari komposisi pertama; pakai referensi terbaru agar tidak usang.
+    val currentOnRemove by rememberUpdatedState(onRemove)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value != SwipeToDismissBoxValue.Settled) {
-                onRemove()
+                currentOnRemove()
                 true
             } else {
                 false
@@ -104,11 +107,13 @@ private fun ReorderableCollectionItemScope.QueueRow(
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
-            )
+            if (dismissState.dismissDirection != SwipeToDismissBoxValue.Settled) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                )
+            }
         },
     ) {
         Surface(color = MaterialTheme.colorScheme.background) {

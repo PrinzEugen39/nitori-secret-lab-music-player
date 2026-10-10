@@ -87,6 +87,11 @@ class PlaybackController(private val context: Context) {
         c.play()
     }
 
+    fun removeById(mediaId: String) {
+        val index = _state.value.queue.indexOfFirst { it.mediaId == mediaId }
+        if (index >= 0) removeAt(index)
+    }
+
     fun removeAt(index: Int) {
         val c = controller ?: return
         _state.value = _state.value.let { s ->
