@@ -1,5 +1,8 @@
 package com.prinzeugen.nitorimusic.ui.library
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.Button
@@ -30,6 +34,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +55,32 @@ fun AlbumDetailScreen(
 ) {
     val tracks = viewModel.getTracksForAlbum(album.id)
     val playback by viewModel.playback.state.collectAsState()
+    val hasCustomArt = viewModel.hasCustomAlbumArt(album.id)
+
+    var showAlbumDialog by remember { mutableStateOf(false) }
+
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.saveCustomAlbumArt(album.id, uri)
+        }
+    }
+
+    if (showAlbumDialog) {
+        AlbumActionDialog(
+            album = album,
+            tracks = tracks,
+            hasCustomArt = hasCustomArt,
+            onPlayNext = { viewModel.playNextAlbum(album.id) },
+            onAddToQueue = { viewModel.addAlbumToQueue(album.id) },
+            onRescan = { viewModel.rescanLibrary() },
+            onChangeAlbumArt = { pickImageLauncher.launch("image/*") },
+            onRemoveCustomArt = { viewModel.removeCustomAlbumArt(album.id) },
+            onListOptions = { /* bisa ditambahkan bila perlu */ },
+            onDismiss = { showAlbumDialog = false }
+        )
+    }
 
     Column(
         Modifier
@@ -64,6 +97,10 @@ fun AlbumDetailScreen(
                 Icon(Icons.Rounded.ArrowBack, contentDescription = "Back to Albums")
             }
             Text("Albums", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { showAlbumDialog = true }) {
+                Icon(Icons.Rounded.MoreVert, contentDescription = "Album Menu")
+            }
         }
 
         Row(
@@ -74,9 +111,11 @@ fun AlbumDetailScreen(
         ) {
             ArtworkImage(
                 trackId = album.coverTrackId,
+                albumId = album.id,
                 modifier = Modifier
                     .size(110.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .clickable { showAlbumDialog = true }
             )
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
@@ -161,20 +200,17 @@ fun AlbumDetailScreen(
                             maxLines = 1
                         )
                     }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            formatTime(track.durationMs),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (track.isCueTrack) {
-                            Text(
-                                "cue",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
+                    Text(
+                        formatTime(track.durationMs),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    com.prinzeugen.nitorimusic.ui.components.TrackMoreOptionsButton(
+                        track = track,
+                        onPlayNext = { viewModel.playback.playNext(track) },
+                        onAddToQueue = { viewModel.playback.addToQueue(track) },
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
                 HorizontalDivider()
             }

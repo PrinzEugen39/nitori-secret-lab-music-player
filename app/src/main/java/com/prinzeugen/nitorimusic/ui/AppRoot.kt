@@ -18,13 +18,16 @@ import com.prinzeugen.nitorimusic.ui.library.LibraryScreen
 import com.prinzeugen.nitorimusic.ui.library.SearchDialog
 import com.prinzeugen.nitorimusic.ui.nowplaying.NowPlayingScreen
 import com.prinzeugen.nitorimusic.ui.nowplaying.QueueScreen
+import com.prinzeugen.nitorimusic.ui.settings.SettingsScreen
 
-enum class Screen { Library, NowPlaying, Queue }
+enum class Screen { Library, NowPlaying, Queue, Settings }
 
 @Composable
 fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
     var screen by rememberSaveable { mutableStateOf(Screen.Library) }
     val selectedAlbum by viewModel.selectedAlbum.collectAsState()
+    val selectedArtist by viewModel.selectedArtist.collectAsState()
+    val selectedFolder by viewModel.selectedFolder.collectAsState()
     val playbackState by viewModel.playback.state.collectAsState()
     val tracks by viewModel.tracks.collectAsState()
 
@@ -40,10 +43,16 @@ fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
         )
     }
 
+    val hasDetailOpen = selectedAlbum != null || selectedArtist != null || selectedFolder != null
+
     // Tombol Back fisik/gesture: Cepat & Responsif
-    BackHandler(enabled = screen != Screen.Library || selectedAlbum != null) {
+    BackHandler(enabled = screen != Screen.Library || hasDetailOpen) {
         if (selectedAlbum != null) {
             viewModel.closeAlbumDetail()
+        } else if (selectedArtist != null) {
+            viewModel.closeArtistDetail()
+        } else if (selectedFolder != null) {
+            viewModel.closeFolderDetail()
         } else if (screen == Screen.Queue) {
             screen = Screen.NowPlaying
         } else {
@@ -52,7 +61,7 @@ fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        // Konten Halaman Aktif (Bisa Library, NowPlaying, atau Queue)
+        // Konten Halaman Aktif (Bisa Library, NowPlaying, Queue, atau Settings)
         Box(Modifier.weight(1f)) {
             Crossfade(targetState = screen, label = "screen_transition") { currentScreen ->
                 when (currentScreen) {
@@ -71,21 +80,29 @@ fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
                             screen = if (selectedAlbum != null) Screen.Library else Screen.NowPlaying
                         },
                     )
+                    Screen.Settings -> SettingsScreen(
+                        viewModel = viewModel,
+                        onBack = { screen = Screen.Library },
+                    )
                 }
             }
         }
 
-        // Persistent 3-Row Bottom Bar yang tampil di SEMUA halaman!
+        // Persistent Bottom Bar yang tampil di SEMUA halaman (Row 1 & 2 disembunyikan saat di Now Playing)
         PowerampBottomBar(
             state = playbackState,
             playback = viewModel.playback,
+            showPlaybackRows = screen != Screen.NowPlaying,
             onOpenNowPlaying = { screen = Screen.NowPlaying },
             onOpenQueue = { screen = Screen.Queue },
             onOpenSearch = { showSearch = true },
             onLibraryClick = {
                 if (selectedAlbum != null) viewModel.closeAlbumDetail()
+                if (selectedArtist != null) viewModel.closeArtistDetail()
+                if (selectedFolder != null) viewModel.closeFolderDetail()
                 screen = Screen.Library
             },
+            onOpenSettings = { screen = Screen.Settings },
         )
     }
 }

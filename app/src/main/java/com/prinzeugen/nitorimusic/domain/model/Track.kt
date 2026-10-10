@@ -14,10 +14,6 @@ data class Track(
     val year: Int = 0,
     val dateAddedSec: Long = 0L,
     val folderPath: String = "",
-    val startMs: Long = 0L,
-    val endMs: Long = 0L, // 0 = end of file
-    val isCueTrack: Boolean = false,
-    val physicalId: Long = id,
 )
 
 data class Album(

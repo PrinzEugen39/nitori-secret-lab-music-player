@@ -37,6 +37,8 @@ fun TracksTabContent(
     layout: ViewLayout,
     gridColumns: Int = 2,
     onTrackClick: (Int) -> Unit,
+    onPlayNext: (Track) -> Unit = {},
+    onAddToQueue: (Track) -> Unit = {},
 ) {
     if (layout == ViewLayout.GRID) {
         LazyVerticalGrid(
@@ -54,7 +56,8 @@ fun TracksTabContent(
                         .clickable { onTrackClick(index) }
                 ) {
                     ArtworkImage(
-                        trackId = track.physicalId,
+                        trackId = track.id,
+                        albumId = track.albumId,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
@@ -89,11 +92,12 @@ fun TracksTabContent(
                     Modifier
                         .fillMaxWidth()
                         .clickable { onTrackClick(index) }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     ArtworkImage(
-                        trackId = track.physicalId,
+                        trackId = track.id,
+                        albumId = track.albumId,
                         sizePx = 140,
                         modifier = Modifier
                             .size(48.dp)
@@ -124,6 +128,12 @@ fun TracksTabContent(
                         formatTime(track.durationMs),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    com.prinzeugen.nitorimusic.ui.components.TrackMoreOptionsButton(
+                        track = track,
+                        onPlayNext = { onPlayNext(track) },
+                        onAddToQueue = { onAddToQueue(track) },
+                        modifier = Modifier.padding(start = 4.dp)
                     )
                 }
                 HorizontalDivider()

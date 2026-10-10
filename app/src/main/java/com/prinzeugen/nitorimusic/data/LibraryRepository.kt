@@ -3,16 +3,35 @@ package com.prinzeugen.nitorimusic.data
 import android.content.ContentUris
 import android.content.Context
 import android.provider.MediaStore
-import com.prinzeugen.nitorimusic.data.cue.CueSheetParser
+import com.prinzeugen.nitorimusic.data.db.AppDatabase
+import com.prinzeugen.nitorimusic.data.db.entity.TrackEntity
 import com.prinzeugen.nitorimusic.domain.model.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
-/** Membaca daftar lagu dari MediaStore dengan dukungan CUE sheet splitting. */
+/**
+ * Repository data lagu dengan dukungan Room DB caching (offline-first & startup instan).
+ */
 class LibraryRepository(private val context: Context) {
 
-    suspend fun loadTracks(): List<Track> = withContext(Dispatchers.IO) {
+    private val db = AppDatabase.getInstance(context)
+    private val trackDao = db.trackDao()
+
+    /** Mengambil daftar lagu dari cache database Room lokal (sangat cepat, 0-10ms). */
+    suspend fun getCachedTracks(): List<Track> = withContext(Dispatchers.IO) {
+        trackDao.getAllTracks().map { it.toDomain() }
+    }
+
+    /** Menghitung jumlah lagu tersimpan di database cache. */
+    suspend fun getCachedTrackCount(): Int = withContext(Dispatchers.IO) {
+        trackDao.getTrackCount()
+    }
+
+    /**
+     * Memindai seluruh lagu dari sistem MediaStore Android,
+     * kemudian memperbarui cache database Room.
+     */
+    suspend fun syncFromMediaStore(): List<Track> = withContext(Dispatchers.IO) {
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -30,7 +49,7 @@ class LibraryRepository(private val context: Context) {
             "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} > 0"
         val sort = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
 
-        val rawTracks = mutableListOf<Track>()
+        val tracks = mutableListOf<Track>()
         context.contentResolver.query(collection, projection, selection, null, sort)?.use { c ->
             val idCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
@@ -50,7 +69,7 @@ class LibraryRepository(private val context: Context) {
                 val rawTrackNo = if (trackCol >= 0) c.getInt(trackCol) else 0
                 val trackNo = if (rawTrackNo >= 1000) rawTrackNo % 1000 else rawTrackNo
 
-                rawTracks += Track(
+                tracks += Track(
                     id = id,
                     uri = ContentUris.withAppendedId(collection, id),
                     title = c.getString(titleCol) ?: "Unknown",
@@ -66,66 +85,29 @@ class LibraryRepository(private val context: Context) {
             }
         }
 
-        // Cari dan proses CUE sheet untuk file yang di-rip per album / CD Image
-        val finalTracks = mutableListOf<Track>()
-        val processedAudioPaths = mutableSetOf<String>()
+        // Simpan ke cache Room DB
+        val entities = tracks.map { TrackEntity.fromDomain(it) }
+        trackDao.replaceAll(entities)
 
-        for (track in rawTracks) {
-            val audioFile = if (track.folderPath.isNotEmpty()) {
-                // Cari file fisik berdasarkan folderPath
-                val folder = File(track.folderPath)
-                findCueFileForTrack(folder, track)
-            } else null
-
-            if (audioFile != null) {
-                val cueSheet = CueSheetParser.parse(audioFile)
-                if (cueSheet != null && cueSheet.tracks.isNotEmpty()) {
-                    val totalDuration = track.durationMs
-                    val cueTracks = cueSheet.tracks
-                    for (i in cueTracks.indices) {
-                        val currentCue = cueTracks[i]
-                        val startMs = currentCue.startMs
-                        val endMs = if (i + 1 < cueTracks.size) cueTracks[i + 1].startMs else totalDuration
-                        val duration = (endMs - startMs).coerceAtLeast(1000L)
-
-                        finalTracks += Track(
-                            id = track.id * 10_000 + currentCue.trackNo,
-                            uri = track.uri,
-                            title = currentCue.title,
-                            artist = currentCue.performer,
-                            album = cueSheet.albumTitle.ifEmpty { track.album },
-                            albumId = track.albumId,
-                            durationMs = duration,
-                            trackNo = currentCue.trackNo,
-                            year = track.year,
-                            dateAddedSec = track.dateAddedSec,
-                            folderPath = track.folderPath,
-                            startMs = startMs,
-                            endMs = endMs,
-                            isCueTrack = true,
-                            physicalId = track.id,
-                        )
-                    }
-                    continue
-                }
-            }
-            finalTracks += track
-        }
-
-        finalTracks
+        tracks
     }
 
-    private fun findCueFileForTrack(folder: File, track: Track): File? {
-        if (!folder.exists() || !folder.isDirectory) return null
-        val cueFiles = folder.listFiles { _, name -> name.endsWith(".cue", ignoreCase = true) }
-        if (!cueFiles.isNullOrEmpty()) {
-            return cueFiles.firstOrNull()
+    /** Menghapus seluruh cache metadata lagu. */
+    suspend fun clearCache() = withContext(Dispatchers.IO) {
+        trackDao.clearAll()
+    }
+
+    /**
+     * Memuat lagu dengan strategi cache-first:
+     * Jika cache ada dan forceSync false, kembalikan cache langsung.
+     */
+    suspend fun loadTracks(forceSync: Boolean = false): List<Track> = withContext(Dispatchers.IO) {
+        if (!forceSync) {
+            val cached = getCachedTracks()
+            if (cached.isNotEmpty()) {
+                return@withContext cached
+            }
         }
-
-        // Fallback: cari file cue yang namanya sama persis dengan audio file
-        val cueSameName = File(folder, "${track.title}.cue")
-        if (cueSameName.exists()) return cueSameName
-
-        return null
+        syncFromMediaStore()
     }
 }

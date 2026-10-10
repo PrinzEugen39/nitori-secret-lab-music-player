@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.prinzeugen.nitorimusic.domain.model.ListOptions
@@ -27,6 +28,35 @@ class SettingsStore(private val context: Context) {
     private val tracksReverseKey = booleanPreferencesKey("tracks_reverse")
     private val tracksLayoutKey = stringPreferencesKey("tracks_layout")
     private val tracksColumnsKey = intPreferencesKey("tracks_columns")
+
+    private val lastMediaIdKey = stringPreferencesKey("last_media_id")
+    private val lastIndexKey = intPreferencesKey("last_index")
+    private val lastPositionMsKey = longPreferencesKey("last_position_ms")
+
+    private val audioFocusKey = booleanPreferencesKey("audio_focus_enabled")
+    private val pauseOnHeadsetDisconnectKey = booleanPreferencesKey("pause_on_headset_disconnect")
+    private val gaplessEnabledKey = booleanPreferencesKey("gapless_enabled")
+
+    val audioFocusEnabled: Flow<Boolean> =
+        context.dataStore.data.map { it[audioFocusKey] ?: true }
+
+    suspend fun setAudioFocusEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[audioFocusKey] = enabled }
+    }
+
+    val pauseOnHeadsetDisconnect: Flow<Boolean> =
+        context.dataStore.data.map { it[pauseOnHeadsetDisconnectKey] ?: true }
+
+    suspend fun setPauseOnHeadsetDisconnect(enabled: Boolean) {
+        context.dataStore.edit { it[pauseOnHeadsetDisconnectKey] = enabled }
+    }
+
+    val gaplessEnabled: Flow<Boolean> =
+        context.dataStore.data.map { it[gaplessEnabledKey] ?: true }
+
+    suspend fun setGaplessEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[gaplessEnabledKey] = enabled }
+    }
 
     /** 0 = acak murni, 1 = sebar merata per artis. */
     val shuffleSpread: Flow<Float> =
@@ -69,6 +99,28 @@ class SettingsStore(private val context: Context) {
             prefs[tracksReverseKey] = options.reverse
             prefs[tracksLayoutKey] = options.layout.name
             prefs[tracksColumnsKey] = options.gridColumns.coerceIn(2, 5)
+        }
+    }
+
+    data class LastPlayback(
+        val mediaId: String?,
+        val index: Int,
+        val positionMs: Long,
+    )
+
+    fun getLastPlayback(): Flow<LastPlayback> = context.dataStore.data.map { prefs ->
+        LastPlayback(
+            mediaId = prefs[lastMediaIdKey],
+            index = prefs[lastIndexKey] ?: 0,
+            positionMs = prefs[lastPositionMsKey] ?: 0L,
+        )
+    }
+
+    suspend fun saveLastPlayback(mediaId: String?, index: Int, positionMs: Long) {
+        context.dataStore.edit { prefs ->
+            if (mediaId != null) prefs[lastMediaIdKey] = mediaId else prefs.remove(lastMediaIdKey)
+            prefs[lastIndexKey] = index
+            prefs[lastPositionMsKey] = positionMs
         }
     }
 

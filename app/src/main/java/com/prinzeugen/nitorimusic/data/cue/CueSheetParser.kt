@@ -108,3 +108,4 @@ object CueSheetParser {
         return (min * 60 * 1000) + (sec * 1000) + (frame * 1000 / 75)
     }
 }
+

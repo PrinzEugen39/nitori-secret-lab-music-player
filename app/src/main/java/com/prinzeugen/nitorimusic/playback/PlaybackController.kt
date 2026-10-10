@@ -26,6 +26,29 @@ data class QueueItem(
     val trackId: Long? get() = mediaId.toLongOrNull()
 }
 
+data class AudioSpecs(
+    val codec: String,
+    val sampleRateHz: Int = 0,
+    val bitDepth: Int = 0,
+    val bitrateKbps: Int = 0,
+    val channelCount: Int = 2,
+) {
+    val displayString: String get() {
+        val parts = mutableListOf<String>()
+        if (codec.isNotEmpty()) parts.add(codec)
+        if (bitDepth > 0) parts.add("${bitDepth}-bit")
+        if (sampleRateHz > 0) {
+            val khz = if (sampleRateHz % 1000 == 0) "${sampleRateHz / 1000} kHz"
+                      else String.format(java.util.Locale.US, "%.1f kHz", sampleRateHz / 1000.0)
+            parts.add(khz)
+        }
+        if (bitrateKbps > 0 && bitDepth == 0) {
+            parts.add("$bitrateKbps kbps")
+        }
+        return parts.joinToString(" • ")
+    }
+}
+
 data class PlaybackUiState(
     val currentMediaId: String? = null,
     val title: String = "",
@@ -36,6 +59,7 @@ data class PlaybackUiState(
     val durationMs: Long = 0L,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
     val sleepTimerMinutesLeft: Int = 0,
+    val audioSpecs: AudioSpecs? = null,
 )
 
 /** Wrapper MediaController untuk UI. Service tetap pemilik player dan queue. */
@@ -71,6 +95,30 @@ class PlaybackController(private val context: Context) {
         c.play()
     }
 
+    fun playNext(track: Track) {
+        val c = controller ?: return
+        val insertIndex = if (c.mediaItemCount == 0) 0 else c.currentMediaItemIndex + 1
+        c.addMediaItem(insertIndex, track.toMediaItem())
+    }
+
+    fun playNext(tracks: List<Track>) {
+        val c = controller ?: return
+        if (tracks.isEmpty()) return
+        val insertIndex = if (c.mediaItemCount == 0) 0 else c.currentMediaItemIndex + 1
+        c.addMediaItems(insertIndex, tracks.map { it.toMediaItem() })
+    }
+
+    fun addToQueue(track: Track) {
+        val c = controller ?: return
+        c.addMediaItem(track.toMediaItem())
+    }
+
+    fun addToQueue(tracks: List<Track>) {
+        val c = controller ?: return
+        if (tracks.isEmpty()) return
+        c.addMediaItems(tracks.map { it.toMediaItem() })
+    }
+
     fun togglePlayPause() {
         val c = controller ?: return
         if (c.isPlaying) c.pause() else c.play()
@@ -78,7 +126,15 @@ class PlaybackController(private val context: Context) {
 
     fun next() { controller?.seekToNext() }
 
-    fun previous() { controller?.seekToPrevious() }
+    fun previous(forcePreviousItem: Boolean = false) {
+        val c = controller ?: return
+        if (forcePreviousItem && c.hasPreviousMediaItem()) {
+            c.seekToPreviousMediaItem()
+            c.play()
+        } else {
+            c.seekToPrevious()
+        }
+    }
 
     fun seekTo(positionMs: Long) { controller?.seekTo(positionMs) }
 
@@ -93,6 +149,10 @@ class PlaybackController(private val context: Context) {
     fun removeById(mediaId: String) {
         val index = _state.value.queue.indexOfFirst { it.mediaId == mediaId }
         if (index >= 0) removeAt(index)
+    }
+
+    fun clearQueue() {
+        controller?.clearMediaItems()
     }
 
     fun removeAt(index: Int) {
@@ -164,6 +224,7 @@ class PlaybackController(private val context: Context) {
                 artist = m.mediaMetadata.artist?.toString().orEmpty(),
             )
         }
+        val specs = extractAudioSpecs(player)
         _state.value = PlaybackUiState(
             currentMediaId = item?.mediaId,
             title = item?.mediaMetadata?.title?.toString().orEmpty(),
@@ -174,13 +235,58 @@ class PlaybackController(private val context: Context) {
             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
             repeatMode = player.repeatMode,
             sleepTimerMinutesLeft = _state.value.sleepTimerMinutesLeft,
+            audioSpecs = specs,
         )
     }
 
-    private fun Track.toMediaItem(): MediaItem {
-        val builder = MediaItem.Builder()
+    private fun extractAudioSpecs(player: Player): AudioSpecs? {
+        val tracks = player.currentTracks
+        for (group in tracks.groups) {
+            if (group.type == C.TRACK_TYPE_AUDIO && group.isSelected) {
+                for (i in 0 until group.length) {
+                    if (group.isTrackSelected(i)) {
+                        val format = group.getTrackFormat(i)
+                        val mime = format.sampleMimeType.orEmpty()
+                        val codec = when {
+                            mime.contains("flac", ignoreCase = true) -> "FLAC"
+                            mime.contains("mpeg", ignoreCase = true) || mime.contains("mp3", ignoreCase = true) -> "MP3"
+                            mime.contains("mp4a", ignoreCase = true) || mime.contains("aac", ignoreCase = true) -> "AAC"
+                            mime.contains("opus", ignoreCase = true) -> "OPUS"
+                            mime.contains("vorbis", ignoreCase = true) || mime.contains("ogg", ignoreCase = true) -> "OGG"
+                            mime.contains("wav", ignoreCase = true) || mime.contains("raw", ignoreCase = true) -> "WAV"
+                            else -> mime.substringAfter("audio/").uppercase().ifEmpty { "AUDIO" }
+                        }
+                        val bitDepth = when (format.pcmEncoding) {
+                            C.ENCODING_PCM_24BIT -> 24
+                            C.ENCODING_PCM_32BIT -> 32
+                            C.ENCODING_PCM_16BIT -> 16
+                            else -> 0
+                        }
+                        val sampleRate = if (format.sampleRate > 0) format.sampleRate else 0
+                        val bitrate = if (format.bitrate > 0) format.bitrate / 1000 else 0
+                        return AudioSpecs(
+                            codec = codec,
+                            sampleRateHz = sampleRate,
+                            bitDepth = bitDepth,
+                            bitrateKbps = bitrate,
+                            channelCount = format.channelCount
+                        )
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun Track.toMediaItem(): MediaItem =
+        MediaItem.Builder()
             .setMediaId(id.toString())
             .setUri(uri)
+            .setRequestMetadata(
+                MediaItem.RequestMetadata.Builder()
+                    .setMediaUri(uri)
+                    .build()
+            )
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(title)
@@ -189,18 +295,7 @@ class PlaybackController(private val context: Context) {
                     .setArtworkUri(albumArtUri(albumId))
                     .build()
             )
-
-        if (isCueTrack && endMs > startMs) {
-            builder.setClippingConfiguration(
-                MediaItem.ClippingConfiguration.Builder()
-                    .setStartPositionMs(startMs)
-                    .setEndPositionMs(endMs)
-                    .build()
-            )
-        }
-
-        return builder.build()
-    }
+            .build()
 
     private fun albumArtUri(albumId: Long): Uri =
         ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)

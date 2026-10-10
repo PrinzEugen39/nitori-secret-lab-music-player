@@ -47,6 +47,8 @@ fun LibraryScreen(
     val albumsOptions by viewModel.albumsOptions.collectAsState()
     val tracksOptions by viewModel.tracksOptions.collectAsState()
     val selectedAlbum by viewModel.selectedAlbum.collectAsState()
+    val selectedArtist by viewModel.selectedArtist.collectAsState()
+    val selectedFolder by viewModel.selectedFolder.collectAsState()
 
     var showShuffleOptions by remember { mutableStateOf(false) }
     var showListOptions by remember { mutableStateOf(false) }
@@ -89,6 +91,26 @@ fun LibraryScreen(
             album = selectedAlbum!!,
             viewModel = viewModel,
             onBack = viewModel::closeAlbumDetail,
+        )
+        return
+    }
+
+    // Jika sedang melihat detail artist, render ArtistDetailScreen
+    if (selectedArtist != null) {
+        ArtistDetailScreen(
+            artist = selectedArtist!!,
+            viewModel = viewModel,
+            onBack = viewModel::closeArtistDetail,
+        )
+        return
+    }
+
+    // Jika sedang melihat detail folder, render FolderDetailScreen
+    if (selectedFolder != null) {
+        FolderDetailScreen(
+            folder = selectedFolder!!,
+            viewModel = viewModel,
+            onBack = viewModel::closeFolderDetail,
         )
         return
     }
@@ -171,7 +193,9 @@ fun LibraryScreen(
                             albums = albums,
                             layout = albumsOptions.layout,
                             gridColumns = albumsOptions.gridColumns,
+                            viewModel = viewModel,
                             onAlbumClick = viewModel::openAlbum,
+                            onOpenListOptions = { showListOptions = true },
                         )
                     }
                     LibraryTab.TRACKS -> {
@@ -181,24 +205,20 @@ fun LibraryScreen(
                             layout = tracksOptions.layout,
                             gridColumns = tracksOptions.gridColumns,
                             onTrackClick = viewModel::play,
+                            onPlayNext = viewModel.playback::playNext,
+                            onAddToQueue = viewModel.playback::addToQueue,
                         )
                     }
                     LibraryTab.ARTISTS -> {
                         ArtistsTabContent(
                             artists = artists,
-                            onArtistClick = { artist ->
-                                val artistTracks = tracks.filter { it.artist == artist.name }
-                                viewModel.playTracks(artistTracks, 0)
-                            }
+                            onArtistClick = viewModel::openArtist,
                         )
                     }
                     LibraryTab.FOLDERS -> {
                         FoldersTabContent(
                             folders = folders,
-                            onFolderClick = { folder ->
-                                val folderTracks = tracks.filter { it.folderPath == folder.path }
-                                viewModel.playTracks(folderTracks, 0)
-                            }
+                            onFolderClick = viewModel::openFolder,
                         )
                     }
                 }

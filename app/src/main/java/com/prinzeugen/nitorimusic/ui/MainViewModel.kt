@@ -43,9 +43,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val tracksOptions: StateFlow<ListOptions> = settings.getTracksOptions()
         .stateIn(viewModelScope, SharingStarted.Eagerly, ListOptions(layout = ViewLayout.LIST))
 
+    // State Audio Engine
+    val audioFocusEnabled: StateFlow<Boolean> = settings.audioFocusEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val pauseOnHeadsetDisconnect: StateFlow<Boolean> = settings.pauseOnHeadsetDisconnect
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val gaplessEnabled: StateFlow<Boolean> = settings.gaplessEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    private val _isScanning = MutableStateFlow(false)
+    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+
     // State untuk detail view saat klik album/artist/folder (null jika di list utama)
     private val _selectedAlbum = MutableStateFlow<Album?>(null)
     val selectedAlbum: StateFlow<Album?> = _selectedAlbum.asStateFlow()
+
+    private val _selectedArtist = MutableStateFlow<Artist?>(null)
+    val selectedArtist: StateFlow<Artist?> = _selectedArtist.asStateFlow()
+
+    private val _selectedFolder = MutableStateFlow<Folder?>(null)
+    val selectedFolder: StateFlow<Folder?> = _selectedFolder.asStateFlow()
 
     init {
         playback.connect()
@@ -53,6 +72,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTab(tab: LibraryTab) {
         _selectedAlbum.value = null
+        _selectedArtist.value = null
+        _selectedFolder.value = null
         _currentTab.value = tab
     }
 
@@ -64,8 +85,72 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _selectedAlbum.value = null
     }
 
-    fun refreshLibrary() {
-        viewModelScope.launch { _tracks.value = repository.loadTracks() }
+    fun openArtist(artist: Artist) {
+        _selectedArtist.value = artist
+    }
+
+    fun closeArtistDetail() {
+        _selectedArtist.value = null
+    }
+
+    fun openFolder(folder: Folder) {
+        _selectedFolder.value = folder
+    }
+
+    fun closeFolderDetail() {
+        _selectedFolder.value = null
+    }
+
+    /**
+     * Memuat library secara offline-first:
+     * Muat dari Room DB cache langsung agar UI instan,
+     * lalu lakukan sinkronisasi MediaStore di background.
+     */
+    fun refreshLibrary(forceSync: Boolean = false) {
+        viewModelScope.launch {
+            if (!forceSync) {
+                val cached = repository.getCachedTracks()
+                if (cached.isNotEmpty()) {
+                    _tracks.value = cached
+                }
+            }
+            _isScanning.value = true
+            try {
+                val synced = repository.syncFromMediaStore()
+                _tracks.value = synced
+            } finally {
+                _isScanning.value = false
+            }
+        }
+    }
+
+    fun rescanLibrary() {
+        refreshLibrary(forceSync = true)
+    }
+
+    fun clearCacheAndRescan() {
+        viewModelScope.launch {
+            _isScanning.value = true
+            try {
+                repository.clearCache()
+                val synced = repository.syncFromMediaStore()
+                _tracks.value = synced
+            } finally {
+                _isScanning.value = false
+            }
+        }
+    }
+
+    fun setAudioFocusEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setAudioFocusEnabled(enabled) }
+    }
+
+    fun setPauseOnHeadsetDisconnect(enabled: Boolean) {
+        viewModelScope.launch { settings.setPauseOnHeadsetDisconnect(enabled) }
+    }
+
+    fun setGaplessEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setGaplessEnabled(enabled) }
     }
 
     fun setAlbumsOptions(options: ListOptions) {
@@ -143,6 +228,60 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun getTracksForAlbum(albumId: Long): List<Track> {
         return _tracks.value
             .filter { it.albumId == albumId }
+            .sortedWith(compareBy({ it.trackNo }, { it.title }))
+    }
+
+    fun playNextAlbum(albumId: Long) {
+        val tracks = getTracksForAlbum(albumId)
+        playback.playNext(tracks)
+    }
+
+    fun addAlbumToQueue(albumId: Long) {
+        val tracks = getTracksForAlbum(albumId)
+        playback.addToQueue(tracks)
+    }
+
+    fun playNextAlbums(albumIds: Set<Long>) {
+        val tracks = albumIds.flatMap { getTracksForAlbum(it) }
+        playback.playNext(tracks)
+    }
+
+    fun addAlbumsToQueue(albumIds: Set<Long>) {
+        val tracks = albumIds.flatMap { getTracksForAlbum(it) }
+        playback.addToQueue(tracks)
+    }
+
+    fun saveCustomAlbumArt(albumId: Long, imageUri: android.net.Uri): Boolean {
+        return com.prinzeugen.nitorimusic.data.CustomArtworkManager.saveCustomArtwork(
+            getApplication(),
+            albumId,
+            imageUri
+        )
+    }
+
+    fun removeCustomAlbumArt(albumId: Long): Boolean {
+        return com.prinzeugen.nitorimusic.data.CustomArtworkManager.deleteCustomArtwork(
+            getApplication(),
+            albumId
+        )
+    }
+
+    fun hasCustomAlbumArt(albumId: Long): Boolean {
+        return com.prinzeugen.nitorimusic.data.CustomArtworkManager.hasCustomArtwork(
+            getApplication(),
+            albumId
+        )
+    }
+
+    fun getTracksForArtist(artistName: String): List<Track> {
+        return _tracks.value
+            .filter { it.artist.equals(artistName, ignoreCase = true) }
+            .sortedWith(compareBy({ it.album }, { it.trackNo }, { it.title }))
+    }
+
+    fun getTracksForFolder(folderPath: String): List<Track> {
+        return _tracks.value
+            .filter { it.folderPath == folderPath }
             .sortedWith(compareBy({ it.trackNo }, { it.title }))
     }
 
