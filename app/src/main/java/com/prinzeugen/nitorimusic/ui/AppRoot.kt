@@ -33,6 +33,7 @@ fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
             viewModel = viewModel,
             hasPermission = hasPermission,
             onOpenNowPlaying = { screen = Screen.NowPlaying },
+            onOpenQueue = { screen = Screen.Queue },
         )
         Screen.NowPlaying -> NowPlayingScreen(
             viewModel = viewModel,

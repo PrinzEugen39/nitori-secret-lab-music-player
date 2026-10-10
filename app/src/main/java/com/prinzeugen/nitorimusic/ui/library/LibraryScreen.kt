@@ -1,18 +1,15 @@
 package com.prinzeugen.nitorimusic.ui.library
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,17 +21,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.prinzeugen.nitorimusic.domain.model.LibraryTab
-import com.prinzeugen.nitorimusic.playback.PlaybackUiState
 import com.prinzeugen.nitorimusic.ui.MainViewModel
+import com.prinzeugen.nitorimusic.ui.components.PowerampBottomBar
 
 @Composable
 fun LibraryScreen(
     viewModel: MainViewModel,
     hasPermission: Boolean,
     onOpenNowPlaying: () -> Unit,
+    onOpenQueue: () -> Unit,
 ) {
     val tracks by viewModel.tracks.collectAsState()
     val playback by viewModel.playback.state.collectAsState()
@@ -46,12 +43,23 @@ fun LibraryScreen(
 
     var showShuffleOptions by remember { mutableStateOf(false) }
     var showListOptions by remember { mutableStateOf(false) }
+    var showSearch by remember { mutableStateOf(false) }
 
     if (showShuffleOptions) {
         ShuffleOptionsDialog(
             spread = spread,
             onSpreadChange = viewModel::setShuffleSpread,
             onDismiss = { showShuffleOptions = false },
+        )
+    }
+
+    if (showSearch) {
+        SearchDialog(
+            allTracks = tracks,
+            onTrackSelect = { track ->
+                viewModel.playTracks(listOf(track), 0)
+            },
+            onDismiss = { showSearch = false },
         )
     }
 
@@ -76,10 +84,13 @@ fun LibraryScreen(
                 viewModel = viewModel,
                 onBack = viewModel::closeAlbumDetail,
             )
-            MiniPlayer(
+            PowerampBottomBar(
                 state = playback,
-                onToggle = viewModel.playback::togglePlayPause,
-                onOpen = onOpenNowPlaying,
+                playback = viewModel.playback,
+                onOpenNowPlaying = onOpenNowPlaying,
+                onOpenQueue = onOpenQueue,
+                onOpenSearch = { showSearch = true },
+                onLibraryClick = viewModel::closeAlbumDetail,
             )
         }
         return
@@ -112,7 +123,7 @@ fun LibraryScreen(
                 }
             }
 
-            // Header Toolbar / Action Bar (seperti Poweramp)
+            // Header Toolbar / Action Bar
             val sortedTracks = viewModel.sortedTracks()
             val albums = viewModel.getAlbums()
             val artists = viewModel.getArtists()
@@ -153,13 +164,14 @@ fun LibraryScreen(
                 }
             }
 
-            // Content per tab
+            // Content per tab dengan support dynamic gridColumns
             Column(Modifier.weight(1f)) {
                 when (currentTab) {
                     LibraryTab.ALBUMS -> {
                         AlbumsTabContent(
                             albums = albums,
                             layout = albumsOptions.layout,
+                            gridColumns = albumsOptions.gridColumns,
                             onAlbumClick = viewModel::openAlbum,
                         )
                     }
@@ -168,6 +180,7 @@ fun LibraryScreen(
                             tracks = sortedTracks,
                             currentMediaId = playback.currentMediaId,
                             layout = tracksOptions.layout,
+                            gridColumns = tracksOptions.gridColumns,
                             onTrackClick = viewModel::play,
                         )
                     }
@@ -175,7 +188,6 @@ fun LibraryScreen(
                         ArtistsTabContent(
                             artists = artists,
                             onArtistClick = { artist ->
-                                // Bisa filter atau shuffle artis tersebut
                                 val artistTracks = tracks.filter { it.artist == artist.name }
                                 viewModel.playTracks(artistTracks, 0)
                             }
@@ -194,36 +206,14 @@ fun LibraryScreen(
             }
         }
 
-        MiniPlayer(
+        // 3-Row Poweramp Bottom Bar
+        PowerampBottomBar(
             state = playback,
-            onToggle = viewModel.playback::togglePlayPause,
-            onOpen = onOpenNowPlaying,
+            playback = viewModel.playback,
+            onOpenNowPlaying = onOpenNowPlaying,
+            onOpenQueue = onOpenQueue,
+            onOpenSearch = { showSearch = true },
+            onLibraryClick = { viewModel.closeAlbumDetail() },
         )
-    }
-}
-
-@Composable
-private fun MiniPlayer(state: PlaybackUiState, onToggle: () -> Unit, onOpen: () -> Unit) {
-    if (state.currentMediaId == null) return
-    Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            Modifier
-                .navigationBarsPadding()
-                .clickable(onClick = onOpen)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(state.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    state.artist,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            TextButton(onClick = onToggle) { Text(if (state.isPlaying) "Pause" else "Play") }
-        }
     }
 }

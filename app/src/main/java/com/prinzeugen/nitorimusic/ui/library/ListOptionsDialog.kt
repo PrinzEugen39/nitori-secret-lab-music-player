@@ -1,6 +1,7 @@
 package com.prinzeugen.nitorimusic.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -18,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +41,7 @@ fun ListOptionsDialog(
     var sortType by remember { mutableStateOf(currentOptions.sortType) }
     var reverse by remember { mutableStateOf(currentOptions.reverse) }
     var layout by remember { mutableStateOf(currentOptions.layout) }
+    var gridColumns by remember { mutableIntStateOf(currentOptions.gridColumns) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -120,6 +124,32 @@ fun ListOptionsDialog(
                     )
                 }
 
+                if (layout == ViewLayout.GRID) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 32.dp, top = 4.dp, bottom = 8.dp)
+                    ) {
+                        Text(
+                            "Columns: $gridColumns",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            (2..5).forEach { cols ->
+                                FilterChip(
+                                    selected = gridColumns == cols,
+                                    onClick = { gridColumns = cols },
+                                    label = { Text("$cols") }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -142,7 +172,14 @@ fun ListOptionsDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onOptionsChange(ListOptions(sortType = sortType, reverse = reverse, layout = layout))
+                    onOptionsChange(
+                        ListOptions(
+                            sortType = sortType,
+                            reverse = reverse,
+                            layout = layout,
+                            gridColumns = gridColumns,
+                        )
+                    )
                     onDismiss()
                 }
             ) {
@@ -151,3 +188,4 @@ fun ListOptionsDialog(
         }
     )
 }
+

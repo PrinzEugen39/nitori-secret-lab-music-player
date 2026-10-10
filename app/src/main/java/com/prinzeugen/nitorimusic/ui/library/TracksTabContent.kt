@@ -35,11 +35,12 @@ fun TracksTabContent(
     tracks: List<Track>,
     currentMediaId: String?,
     layout: ViewLayout,
+    gridColumns: Int = 2,
     onTrackClick: (Int) -> Unit,
 ) {
     if (layout == ViewLayout.GRID) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(gridColumns.coerceIn(2, 5)),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -130,3 +131,4 @@ fun TracksTabContent(
         }
     }
 }
+

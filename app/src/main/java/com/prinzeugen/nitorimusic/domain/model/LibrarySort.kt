@@ -25,4 +25,6 @@ data class ListOptions(
     val sortType: SortType = SortType.BY_NAME,
     val reverse: Boolean = false,
     val layout: ViewLayout = ViewLayout.GRID,
+    val gridColumns: Int = 2,
 )
+

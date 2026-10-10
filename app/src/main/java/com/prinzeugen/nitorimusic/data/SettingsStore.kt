@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.prinzeugen.nitorimusic.domain.model.ListOptions
@@ -20,10 +21,12 @@ class SettingsStore(private val context: Context) {
     private val albumsSortKey = stringPreferencesKey("albums_sort")
     private val albumsReverseKey = booleanPreferencesKey("albums_reverse")
     private val albumsLayoutKey = stringPreferencesKey("albums_layout")
+    private val albumsColumnsKey = intPreferencesKey("albums_columns")
 
     private val tracksSortKey = stringPreferencesKey("tracks_sort")
     private val tracksReverseKey = booleanPreferencesKey("tracks_reverse")
     private val tracksLayoutKey = stringPreferencesKey("tracks_layout")
+    private val tracksColumnsKey = intPreferencesKey("tracks_columns")
 
     /** 0 = acak murni, 1 = sebar merata per artis. */
     val shuffleSpread: Flow<Float> =
@@ -38,6 +41,7 @@ class SettingsStore(private val context: Context) {
             sortType = prefs[albumsSortKey]?.let { runCatching { SortType.valueOf(it) }.getOrNull() } ?: SortType.BY_NAME,
             reverse = prefs[albumsReverseKey] ?: false,
             layout = prefs[albumsLayoutKey]?.let { runCatching { ViewLayout.valueOf(it) }.getOrNull() } ?: ViewLayout.GRID,
+            gridColumns = (prefs[albumsColumnsKey] ?: 2).coerceIn(2, 5),
         )
     }
 
@@ -46,6 +50,7 @@ class SettingsStore(private val context: Context) {
             prefs[albumsSortKey] = options.sortType.name
             prefs[albumsReverseKey] = options.reverse
             prefs[albumsLayoutKey] = options.layout.name
+            prefs[albumsColumnsKey] = options.gridColumns.coerceIn(2, 5)
         }
     }
 
@@ -54,6 +59,7 @@ class SettingsStore(private val context: Context) {
             sortType = prefs[tracksSortKey]?.let { runCatching { SortType.valueOf(it) }.getOrNull() } ?: SortType.BY_NAME,
             reverse = prefs[tracksReverseKey] ?: false,
             layout = prefs[tracksLayoutKey]?.let { runCatching { ViewLayout.valueOf(it) }.getOrNull() } ?: ViewLayout.LIST,
+            gridColumns = (prefs[tracksColumnsKey] ?: 2).coerceIn(2, 5),
         )
     }
 
@@ -62,6 +68,7 @@ class SettingsStore(private val context: Context) {
             prefs[tracksSortKey] = options.sortType.name
             prefs[tracksReverseKey] = options.reverse
             prefs[tracksLayoutKey] = options.layout.name
+            prefs[tracksColumnsKey] = options.gridColumns.coerceIn(2, 5)
         }
     }
 

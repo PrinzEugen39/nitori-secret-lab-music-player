@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -118,6 +119,30 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
             OutlinedButton(onClick = playback::previous) { Text("Prev") }
             Button(onClick = playback::togglePlayPause) { Text(if (state.isPlaying) "Pause" else "Play") }
             OutlinedButton(onClick = playback::next) { Text("Next") }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        // Bottom Navigation Icons ala Poweramp
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Text("⊞", style = MaterialTheme.typography.titleLarge)
+            }
+            IconButton(onClick = {}) {
+                Text("ılı", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onBack) {
+                Text("🔍", style = MaterialTheme.typography.bodyLarge)
+            }
+            IconButton(onClick = onOpenQueue) {
+                Text("☰", style = MaterialTheme.typography.titleLarge)
+            }
         }
     }
 }
