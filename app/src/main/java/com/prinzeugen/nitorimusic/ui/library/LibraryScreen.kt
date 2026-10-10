@@ -3,34 +3,30 @@ package com.prinzeugen.nitorimusic.ui.library
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Slider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.domain.model.LibraryTab
 import com.prinzeugen.nitorimusic.playback.PlaybackUiState
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 
@@ -42,8 +38,14 @@ fun LibraryScreen(
 ) {
     val tracks by viewModel.tracks.collectAsState()
     val playback by viewModel.playback.state.collectAsState()
+    val currentTab by viewModel.currentTab.collectAsState()
     val spread by viewModel.shuffleSpread.collectAsState()
+    val albumsOptions by viewModel.albumsOptions.collectAsState()
+    val tracksOptions by viewModel.tracksOptions.collectAsState()
+    val selectedAlbum by viewModel.selectedAlbum.collectAsState()
+
     var showShuffleOptions by remember { mutableStateOf(false) }
+    var showListOptions by remember { mutableStateOf(false) }
 
     if (showShuffleOptions) {
         ShuffleOptionsDialog(
@@ -51,6 +53,36 @@ fun LibraryScreen(
             onSpreadChange = viewModel::setShuffleSpread,
             onDismiss = { showShuffleOptions = false },
         )
+    }
+
+    if (showListOptions) {
+        val (title, currentOptions, onSave) = when (currentTab) {
+            LibraryTab.ALBUMS -> Triple("Albums", albumsOptions, viewModel::setAlbumsOptions)
+            else -> Triple("Tracks", tracksOptions, viewModel::setTracksOptions)
+        }
+        ListOptionsDialog(
+            title = title,
+            currentOptions = currentOptions,
+            onOptionsChange = onSave,
+            onDismiss = { showListOptions = false },
+        )
+    }
+
+    // Jika sedang melihat detail album, render AlbumDetailScreen
+    if (selectedAlbum != null) {
+        Column(Modifier.fillMaxSize()) {
+            AlbumDetailScreen(
+                album = selectedAlbum!!,
+                viewModel = viewModel,
+                onBack = viewModel::closeAlbumDetail,
+            )
+            MiniPlayer(
+                state = playback,
+                onToggle = viewModel.playback::togglePlayPause,
+                onOpen = onOpenNowPlaying,
+            )
+        }
+        return
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -63,54 +95,105 @@ fun LibraryScreen(
             )
             Column(Modifier.weight(1f)) {}
         } else {
+            // Tab Row
+            ScrollableTabRow(
+                selectedTabIndex = currentTab.ordinal,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding(),
+                edgePadding = 16.dp,
+            ) {
+                LibraryTab.values().forEach { tab ->
+                    Tab(
+                        selected = currentTab == tab,
+                        onClick = { viewModel.selectTab(tab) },
+                        text = { Text(tab.label) }
+                    )
+                }
+            }
+
+            // Header Toolbar / Action Bar (seperti Poweramp)
+            val sortedTracks = viewModel.sortedTracks()
+            val albums = viewModel.getAlbums()
+            val artists = viewModel.getArtists()
+            val folders = viewModel.getFolders()
+
+            val countLabel = when (currentTab) {
+                LibraryTab.ALBUMS -> "${albums.size} albums"
+                LibraryTab.TRACKS -> "${sortedTracks.size} lagu"
+                LibraryTab.ARTISTS -> "${artists.size} artists"
+                LibraryTab.FOLDERS -> "${folders.size} folders"
+            }
+
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("${tracks.size} lagu", style = MaterialTheme.typography.titleMedium)
+                Text(countLabel, style = MaterialTheme.typography.titleSmall)
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { showShuffleOptions = true }) { Text("Opsi") }
-                    Button(onClick = viewModel::shuffleAll, enabled = tracks.isNotEmpty()) {
+                    if (currentTab == LibraryTab.ALBUMS || currentTab == LibraryTab.TRACKS) {
+                        TextButton(onClick = { showListOptions = true }) {
+                            Text("List Options")
+                        }
+                    }
+                    TextButton(onClick = { showShuffleOptions = true }) {
+                        Text("Opsi")
+                    }
+                    Button(
+                        onClick = viewModel::shuffleAll,
+                        enabled = tracks.isNotEmpty(),
+                        modifier = Modifier.padding(start = 4.dp)
+                    ) {
                         Text("Shuffle all")
                     }
                 }
             }
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 8.dp),
-            ) {
-                itemsIndexed(tracks, key = { _, t -> t.id }) { index, track ->
-                    val isCurrent = playback.currentMediaId == track.id.toString()
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.play(index) }
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            track.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (isCurrent) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            "${track.artist} - ${track.album}",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            // Content per tab
+            Column(Modifier.weight(1f)) {
+                when (currentTab) {
+                    LibraryTab.ALBUMS -> {
+                        AlbumsTabContent(
+                            albums = albums,
+                            layout = albumsOptions.layout,
+                            onAlbumClick = viewModel::openAlbum,
                         )
                     }
-                    HorizontalDivider()
+                    LibraryTab.TRACKS -> {
+                        TracksTabContent(
+                            tracks = sortedTracks,
+                            currentMediaId = playback.currentMediaId,
+                            layout = tracksOptions.layout,
+                            onTrackClick = viewModel::play,
+                        )
+                    }
+                    LibraryTab.ARTISTS -> {
+                        ArtistsTabContent(
+                            artists = artists,
+                            onArtistClick = { artist ->
+                                // Bisa filter atau shuffle artis tersebut
+                                val artistTracks = tracks.filter { it.artist == artist.name }
+                                viewModel.playTracks(artistTracks, 0)
+                            }
+                        )
+                    }
+                    LibraryTab.FOLDERS -> {
+                        FoldersTabContent(
+                            folders = folders,
+                            onFolderClick = { folder ->
+                                val folderTracks = tracks.filter { it.folderPath == folder.path }
+                                viewModel.playTracks(folderTracks, 0)
+                            }
+                        )
+                    }
                 }
             }
         }
+
         MiniPlayer(
             state = playback,
             onToggle = viewModel.playback::togglePlayPause,

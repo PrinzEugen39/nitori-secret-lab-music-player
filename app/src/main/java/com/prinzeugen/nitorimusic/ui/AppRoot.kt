@@ -2,6 +2,7 @@ package com.prinzeugen.nitorimusic.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -15,9 +16,16 @@ private enum class Screen { Library, NowPlaying, Queue }
 @Composable
 fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
     var screen by rememberSaveable { mutableStateOf(Screen.Library) }
+    val selectedAlbum by viewModel.selectedAlbum.collectAsState()
 
-    BackHandler(enabled = screen != Screen.Library) {
-        screen = if (screen == Screen.Queue) Screen.NowPlaying else Screen.Library
+    BackHandler(enabled = screen != Screen.Library || selectedAlbum != null) {
+        if (selectedAlbum != null) {
+            viewModel.closeAlbumDetail()
+        } else if (screen == Screen.Queue) {
+            screen = Screen.NowPlaying
+        } else {
+            screen = Screen.Library
+        }
     }
 
     when (screen) {

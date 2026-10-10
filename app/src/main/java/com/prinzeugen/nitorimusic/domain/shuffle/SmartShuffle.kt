@@ -37,3 +37,4 @@ class SmartShuffle(
         return if (first != null) listOf(first) + ordered else ordered
     }
 }
+
