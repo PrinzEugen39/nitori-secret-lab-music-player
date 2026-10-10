@@ -177,8 +177,8 @@ class PlaybackController(private val context: Context) {
         )
     }
 
-    private fun Track.toMediaItem(): MediaItem =
-        MediaItem.Builder()
+    private fun Track.toMediaItem(): MediaItem {
+        val builder = MediaItem.Builder()
             .setMediaId(id.toString())
             .setUri(uri)
             .setMediaMetadata(
@@ -189,7 +189,18 @@ class PlaybackController(private val context: Context) {
                     .setArtworkUri(albumArtUri(albumId))
                     .build()
             )
-            .build()
+
+        if (isCueTrack && endMs > startMs) {
+            builder.setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs(startMs)
+                    .setEndPositionMs(endMs)
+                    .build()
+            )
+        }
+
+        return builder.build()
+    }
 
     private fun albumArtUri(albumId: Long): Uri =
         ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)

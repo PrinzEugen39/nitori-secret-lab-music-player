@@ -161,11 +161,20 @@ fun AlbumDetailScreen(
                             maxLines = 1
                         )
                     }
-                    Text(
-                        formatTime(track.durationMs),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            formatTime(track.durationMs),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (track.isCueTrack) {
+                            Text(
+                                "cue",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
                 HorizontalDivider()
             }

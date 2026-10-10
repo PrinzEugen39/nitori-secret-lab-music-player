@@ -54,7 +54,7 @@ fun TracksTabContent(
                         .clickable { onTrackClick(index) }
                 ) {
                     ArtworkImage(
-                        trackId = track.id,
+                        trackId = track.physicalId,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
@@ -93,7 +93,7 @@ fun TracksTabContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     ArtworkImage(
-                        trackId = track.id,
+                        trackId = track.physicalId,
                         sizePx = 140,
                         modifier = Modifier
                             .size(48.dp)
