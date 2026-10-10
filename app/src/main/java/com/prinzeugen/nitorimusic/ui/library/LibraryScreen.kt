@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -26,7 +29,11 @@ import com.prinzeugen.nitorimusic.playback.PlaybackUiState
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 
 @Composable
-fun LibraryScreen(viewModel: MainViewModel, hasPermission: Boolean) {
+fun LibraryScreen(
+    viewModel: MainViewModel,
+    hasPermission: Boolean,
+    onOpenNowPlaying: () -> Unit,
+) {
     val tracks by viewModel.tracks.collectAsState()
     val playback by viewModel.playback.state.collectAsState()
 
@@ -34,14 +41,25 @@ fun LibraryScreen(viewModel: MainViewModel, hasPermission: Boolean) {
         if (!hasPermission) {
             Text(
                 "Izin akses audio dibutuhkan untuk membaca library.",
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(24.dp),
             )
+            Column(Modifier.weight(1f)) {}
         } else {
-            Text(
-                "${tracks.size} lagu",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 16.dp, top = 48.dp, bottom = 8.dp),
-            )
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("${tracks.size} lagu", style = MaterialTheme.typography.titleMedium)
+                Button(onClick = viewModel::shuffleAll, enabled = tracks.isNotEmpty()) {
+                    Text("Shuffle all")
+                }
+            }
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 8.dp),
@@ -74,16 +92,23 @@ fun LibraryScreen(viewModel: MainViewModel, hasPermission: Boolean) {
                 }
             }
         }
-        MiniPlayer(playback, onToggle = viewModel.playback::togglePlayPause)
+        MiniPlayer(
+            state = playback,
+            onToggle = viewModel.playback::togglePlayPause,
+            onOpen = onOpenNowPlaying,
+        )
     }
 }
 
 @Composable
-private fun MiniPlayer(state: PlaybackUiState, onToggle: () -> Unit) {
+private fun MiniPlayer(state: PlaybackUiState, onToggle: () -> Unit, onOpen: () -> Unit) {
     if (state.currentMediaId == null) return
     Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            Modifier
+                .navigationBarsPadding()
+                .clickable(onClick = onOpen)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {

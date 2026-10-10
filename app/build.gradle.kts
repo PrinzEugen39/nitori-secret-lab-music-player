@@ -60,6 +60,7 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation(libs.coil.compose)
+    implementation(libs.reorderable)
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
 }

@@ -11,3 +11,4 @@ data class Track(
     val albumId: Long,
     val durationMs: Long,
 )
+

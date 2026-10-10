@@ -11,6 +11,7 @@ coil = "2.7.0"
 datastore = "1.1.1"
 coroutines = "1.9.0"
 coreKtx = "1.15.0"
+reorderable = "2.4.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -33,6 +34,7 @@ room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 

@@ -18,8 +18,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import com.prinzeugen.nitorimusic.ui.AppRoot
 import com.prinzeugen.nitorimusic.ui.MainViewModel
-import com.prinzeugen.nitorimusic.ui.library.LibraryScreen
 import com.prinzeugen.nitorimusic.ui.theme.NitoriMusicTheme
 
 class MainActivity : ComponentActivity() {
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(granted) { if (granted) viewModel.refreshLibrary() }
 
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    LibraryScreen(viewModel, hasPermission = granted)
+                    AppRoot(viewModel, hasPermission = granted)
                 }
             }
         }
