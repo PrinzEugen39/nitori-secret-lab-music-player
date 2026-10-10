@@ -34,7 +34,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
-import com.prinzeugen.nitorimusic.ui.nowplaying.formatTime
+import com.prinzeugen.nitorimusic.ui.formatTime
 
 @Composable
 fun SearchDialog(
@@ -153,3 +153,4 @@ fun SearchDialog(
         }
     }
 }
+

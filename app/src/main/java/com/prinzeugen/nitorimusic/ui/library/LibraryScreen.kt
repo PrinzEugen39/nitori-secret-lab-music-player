@@ -3,12 +3,21 @@ package com.prinzeugen.nitorimusic.ui.library
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -30,8 +39,6 @@ import com.prinzeugen.nitorimusic.ui.components.PowerampBottomBar
 fun LibraryScreen(
     viewModel: MainViewModel,
     hasPermission: Boolean,
-    onOpenNowPlaying: () -> Unit,
-    onOpenQueue: () -> Unit,
 ) {
     val tracks by viewModel.tracks.collectAsState()
     val playback by viewModel.playback.state.collectAsState()
@@ -78,21 +85,11 @@ fun LibraryScreen(
 
     // Jika sedang melihat detail album, render AlbumDetailScreen
     if (selectedAlbum != null) {
-        Column(Modifier.fillMaxSize()) {
-            AlbumDetailScreen(
-                album = selectedAlbum!!,
-                viewModel = viewModel,
-                onBack = viewModel::closeAlbumDetail,
-            )
-            PowerampBottomBar(
-                state = playback,
-                playback = viewModel.playback,
-                onOpenNowPlaying = onOpenNowPlaying,
-                onOpenQueue = onOpenQueue,
-                onOpenSearch = { showSearch = true },
-                onLibraryClick = viewModel::closeAlbumDetail,
-            )
-        }
+        AlbumDetailScreen(
+            album = selectedAlbum!!,
+            viewModel = viewModel,
+            onBack = viewModel::closeAlbumDetail,
+        )
         return
     }
 
@@ -147,8 +144,8 @@ fun LibraryScreen(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (currentTab == LibraryTab.ALBUMS || currentTab == LibraryTab.TRACKS) {
-                        TextButton(onClick = { showListOptions = true }) {
-                            Text("List Options")
+                        IconButton(onClick = { showListOptions = true }) {
+                            Icon(Icons.Rounded.Tune, contentDescription = "List Options")
                         }
                     }
                     TextButton(onClick = { showShuffleOptions = true }) {
@@ -159,6 +156,8 @@ fun LibraryScreen(
                         enabled = tracks.isNotEmpty(),
                         modifier = Modifier.padding(start = 4.dp)
                     ) {
+                        Icon(Icons.Rounded.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
                         Text("Shuffle all")
                     }
                 }
@@ -205,15 +204,5 @@ fun LibraryScreen(
                 }
             }
         }
-
-        // 3-Row Poweramp Bottom Bar
-        PowerampBottomBar(
-            state = playback,
-            playback = viewModel.playback,
-            onOpenNowPlaying = onOpenNowPlaying,
-            onOpenQueue = onOpenQueue,
-            onOpenSearch = { showSearch = true },
-            onLibraryClick = { viewModel.closeAlbumDetail() },
-        )
     }
 }

@@ -16,6 +16,7 @@ import com.prinzeugen.nitorimusic.domain.model.Track
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class QueueItem(
     val mediaId: String,
@@ -33,6 +34,8 @@ data class PlaybackUiState(
     val queue: List<QueueItem> = emptyList(),
     val currentIndex: Int = -1,
     val durationMs: Long = 0L,
+    val repeatMode: Int = Player.REPEAT_MODE_OFF,
+    val sleepTimerMinutesLeft: Int = 0,
 )
 
 /** Wrapper MediaController untuk UI. Service tetap pemilik player dan queue. */
@@ -111,6 +114,39 @@ class PlaybackController(private val context: Context) {
         c.moveMediaItem(from, to)
     }
 
+    fun toggleRepeatMode() {
+        val c = controller ?: return
+        val nextMode = when (c.repeatMode) {
+            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+            else -> Player.REPEAT_MODE_OFF
+        }
+        c.repeatMode = nextMode
+        publish(c)
+    }
+
+    private var sleepJob: kotlinx.coroutines.Job? = null
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
+
+    fun setSleepTimer(minutes: Int) {
+        cancelSleepTimer()
+        if (minutes <= 0) return
+        sleepJob = scope.launch {
+            for (m in minutes downTo 1) {
+                _state.value = _state.value.copy(sleepTimerMinutesLeft = m)
+                kotlinx.coroutines.delay(60_000L)
+            }
+            _state.value = _state.value.copy(sleepTimerMinutesLeft = 0)
+            controller?.pause()
+        }
+    }
+
+    fun cancelSleepTimer() {
+        sleepJob?.cancel()
+        sleepJob = null
+        _state.value = _state.value.copy(sleepTimerMinutesLeft = 0)
+    }
+
     fun release() {
         controller?.removeListener(listener)
         future?.let { MediaController.releaseFuture(it) }
@@ -136,6 +172,8 @@ class PlaybackController(private val context: Context) {
             queue = queue,
             currentIndex = if (item == null) -1 else player.currentMediaItemIndex,
             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
+            repeatMode = player.repeatMode,
+            sleepTimerMinutesLeft = _state.value.sleepTimerMinutesLeft,
         )
     }
 

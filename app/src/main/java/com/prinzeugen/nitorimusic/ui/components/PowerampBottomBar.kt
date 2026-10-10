@@ -15,6 +15,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -114,16 +121,17 @@ fun PowerampBottomBar(
                 // Play / Pause Button Bulat
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
                         .clickable(onClick = playback::togglePlayPause),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (state.isPlaying) "⏸" else "▶",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.bodyMedium
+                    Icon(
+                        imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription = if (state.isPlaying) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -154,24 +162,41 @@ fun PowerampBottomBar(
             ) {
                 // 1. Library Button
                 IconButton(onClick = onLibraryClick) {
-                    Text("⊞", style = MaterialTheme.typography.titleLarge)
+                    Icon(
+                        imageVector = Icons.Rounded.GridView,
+                        contentDescription = "Library",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 // 2. Now Playing / Equalizer Icon
                 IconButton(onClick = onOpenNowPlaying) {
-                    Text("ılı", style = MaterialTheme.typography.titleMedium)
+                    Icon(
+                        imageVector = Icons.Rounded.GraphicEq,
+                        contentDescription = "Now Playing",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
 
                 // 3. Search Icon
                 IconButton(onClick = onOpenSearch) {
-                    Text("🔍", style = MaterialTheme.typography.bodyLarge)
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 // 4. Current Queue Button (Up Next)
                 IconButton(onClick = onOpenQueue) {
-                    Text("☰", style = MaterialTheme.typography.titleLarge)
+                    Icon(
+                        imageVector = Icons.Rounded.QueueMusic,
+                        contentDescription = "Queue",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
     }
 }
+

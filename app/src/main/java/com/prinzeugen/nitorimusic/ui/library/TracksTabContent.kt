@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
-import com.prinzeugen.nitorimusic.ui.nowplaying.formatTime
+import com.prinzeugen.nitorimusic.ui.formatTime
 
 @Composable
 fun TracksTabContent(
