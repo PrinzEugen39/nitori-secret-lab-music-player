@@ -153,13 +153,20 @@ fun FolderDetailScreen(
                             color = if (isCurrent) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            "${track.artist} • ${track.album}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "${track.artist} • ${track.album}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (track.isCue || track.id < 0L) {
+                                Spacer(Modifier.width(6.dp))
+                                com.prinzeugen.nitorimusic.ui.components.CueBadge()
+                            }
+                        }
                     }
                     Text(
                         formatTime(track.durationMs),

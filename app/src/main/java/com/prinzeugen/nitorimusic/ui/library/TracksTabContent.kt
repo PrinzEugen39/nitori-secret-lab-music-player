@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -174,13 +175,23 @@ fun TracksTabContent(
                             color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(top = 6.dp)
                         )
-                        Text(
-                            track.artist,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                track.artist,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (track.isCue || track.id < 0L) {
+                                Spacer(Modifier.width(4.dp))
+                                com.prinzeugen.nitorimusic.ui.components.CueBadge()
+                            }
+                        }
                     }
                 }
             }
@@ -273,13 +284,20 @@ fun TracksTabContent(
                                 color = if (isCurrent) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
                             )
-                            Text(
-                                "${track.artist} • ${track.album}",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "${track.artist} • ${track.album}",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (track.isCue || track.id < 0L) {
+                                    Spacer(Modifier.width(6.dp))
+                                    com.prinzeugen.nitorimusic.ui.components.CueBadge()
+                                }
+                            }
                         }
 
                         Text(

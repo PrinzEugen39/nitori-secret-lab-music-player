@@ -2,20 +2,31 @@ package com.prinzeugen.nitorimusic.data
 
 import android.content.ContentUris
 import android.content.Context
+import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
+import com.prinzeugen.nitorimusic.data.cue.CueSheet
+import com.prinzeugen.nitorimusic.data.cue.CueSheetParser
 import com.prinzeugen.nitorimusic.data.db.AppDatabase
 import com.prinzeugen.nitorimusic.data.db.entity.TrackEntity
 import com.prinzeugen.nitorimusic.domain.model.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
- * Repository data lagu dengan dukungan Room DB caching (offline-first & startup instan).
+ * Repository data lagu dengan dukungan Room DB caching (offline-first & startup instan)
+ * dan parsing CUE Sheet (.cue) otomatis ala Poweramp / MusicBee.
  */
 class LibraryRepository(private val context: Context) {
 
     private val db = AppDatabase.getInstance(context)
     private val trackDao = db.trackDao()
+
+    companion object {
+        private const val TAG = "CUE_SCAN"
+    }
 
     /** Mengambil daftar lagu dari cache database Room lokal (sangat cepat, 0-10ms). */
     suspend fun getCachedTracks(): List<Track> = withContext(Dispatchers.IO) {
@@ -27,11 +38,20 @@ class LibraryRepository(private val context: Context) {
         trackDao.getTrackCount()
     }
 
+    private data class CueFileInfo(
+        val path: String,
+        val folder: String,
+        val fileName: String,
+        val contentUri: Uri?
+    )
+
     /**
      * Memindai seluruh lagu dari sistem MediaStore Android,
-     * kemudian memperbarui cache database Room.
+     * mencari dan mem-parsing berkas CUE sheet (.cue),
+     * lalu memperbarui cache database Room.
      */
-    suspend fun syncFromMediaStore(): List<Track> = withContext(Dispatchers.IO) {
+    suspend fun syncFromMediaStore(onProgress: ((String) -> Unit)? = null): List<Track> = withContext(Dispatchers.IO) {
+        onProgress?.invoke("Membaca data audio media...")
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -54,6 +74,9 @@ class LibraryRepository(private val context: Context) {
         val existingStats = trackDao.getAllTracks().associate { it.id to Pair(it.playCount, it.lastPlayedMs) }
 
         val tracks = mutableListOf<Track>()
+        val trackFileNames = mutableMapOf<Long, String>()
+        val folders = mutableSetOf<String>()
+
         context.contentResolver.query(collection, projection, selection, null, sort)?.use { c ->
             val idCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
@@ -71,10 +94,18 @@ class LibraryRepository(private val context: Context) {
                 val id = c.getLong(idCol)
                 val rawPath = if (dataCol >= 0) c.getString(dataCol) ?: "" else ""
                 val folder = if (rawPath.contains("/")) rawPath.substringBeforeLast("/") else ""
+                val fileName = if (rawPath.contains("/")) rawPath.substringAfterLast("/") else ""
                 val rawTrackNo = if (trackCol >= 0) c.getInt(trackCol) else 0
                 val trackNo = if (rawTrackNo >= 1000) rawTrackNo % 1000 else rawTrackNo
                 val sizeBytes = if (sizeCol >= 0) c.getLong(sizeCol) else 0L
                 val stat = existingStats[id]
+
+                if (folder.isNotEmpty()) {
+                    folders.add(folder)
+                }
+                if (fileName.isNotEmpty()) {
+                    trackFileNames[id] = fileName
+                }
 
                 tracks += Track(
                     id = id,
@@ -95,11 +126,251 @@ class LibraryRepository(private val context: Context) {
             }
         }
 
+        // ==========================================
+        // CUE SHEET DISCOVERY & VIRTUAL TRACK SPLIT
+        // ==========================================
+        val cueFiles = mutableListOf<CueFileInfo>()
+
+        // Helper rekursif untuk mencari berkas .cue di direktori
+        fun scanDirForCues(dir: File, currentDepth: Int = 0, maxDepth: Int = 4) {
+            if (!dir.exists() || !dir.isDirectory || currentDepth > maxDepth) return
+            try {
+                dir.listFiles()?.forEach { file ->
+                    if (file.isFile && file.name.endsWith(".cue", ignoreCase = true)) {
+                        if (cueFiles.none { it.path.equals(file.absolutePath, ignoreCase = true) }) {
+                            cueFiles.add(
+                                CueFileInfo(
+                                    path = file.absolutePath,
+                                    folder = dir.absolutePath,
+                                    fileName = file.name,
+                                    contentUri = null
+                                )
+                            )
+                            Log.d(TAG, "Ditemukan berkas CUE fisik: ${file.absolutePath}")
+                        }
+                    } else if (file.isDirectory && !file.name.startsWith(".")) {
+                        scanDirForCues(file, currentDepth + 1, maxDepth)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Gagal memindai direktori ${dir.absolutePath}: ${e.message}")
+            }
+        }
+
+        // 1. Pindai folder-folder dari lagu yang ditemukan
+        folders.forEach { folderPath ->
+            scanDirForCues(File(folderPath))
+            // Juga cek 1 level di atas folder (parent directory)
+            File(folderPath).parentFile?.let { parent ->
+                scanDirForCues(parent, currentDepth = 0, maxDepth = 1)
+            }
+        }
+
+        // 2. Pindai lokasi standar Music & Download
+        val standardMusicDirs = listOf(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            File("/storage/emulated/0/Music"),
+            File("/storage/emulated/0/Download"),
+        )
+        standardMusicDirs.forEach { dir ->
+            if (dir.exists()) {
+                scanDirForCues(dir, currentDepth = 0, maxDepth = 4)
+            }
+        }
+
+        // 3. Fallback: Temukan file .cue melalui MediaStore.Files (kompatibel Scoped Storage)
+        try {
+            val filesUri = MediaStore.Files.getContentUri("external")
+            val cueProj = arrayOf(
+                MediaStore.Files.FileColumns._ID,
+                MediaStore.Files.FileColumns.DATA,
+                MediaStore.Files.FileColumns.DISPLAY_NAME,
+            )
+            val cueSel = "${MediaStore.Files.FileColumns.DATA} LIKE '%.cue' OR ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.cue'"
+            context.contentResolver.query(filesUri, cueProj, cueSel, null, null)?.use { cursor ->
+                val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
+                val dataCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                val nameCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(idCol)
+                    val p = if (dataCol >= 0) cursor.getString(dataCol) ?: "" else ""
+                    val name = if (nameCol >= 0) cursor.getString(nameCol) ?: "" else ""
+                    val resolvedName = name.ifEmpty { p.substringAfterLast("/") }
+                    val resolvedFolder = if (p.contains("/")) p.substringBeforeLast("/") else ""
+                    val uri = ContentUris.withAppendedId(filesUri, id)
+                    if (p.isNotEmpty() || resolvedName.isNotEmpty()) {
+                        if (cueFiles.none { it.path.equals(p, ignoreCase = true) }) {
+                            cueFiles.add(CueFileInfo(p, resolvedFolder, resolvedName, uri))
+                            Log.d(TAG, "Ditemukan berkas CUE dari MediaStore.Files: $p")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Gagal query MediaStore.Files: ${e.message}")
+        }
+
+        Log.d(TAG, "Total file CUE ditemukan: ${cueFiles.size}")
+        if (cueFiles.isNotEmpty()) {
+            onProgress?.invoke("Memproses ${cueFiles.size} berkas CUE Sheet...")
+        }
+
+        val finalTracks = ArrayList(tracks)
+        val replacedParentIds = mutableSetOf<Long>()
+
+        // 4. Parse setiap CUE Sheet dan gantikan parent monolithic audio dengan virtual tracks
+        cueFiles.forEach { cueInfo ->
+            val bytes: ByteArray? = try {
+                val f = File(cueInfo.path)
+                if (f.exists() && f.canRead()) {
+                    f.readBytes()
+                } else if (cueInfo.contentUri != null) {
+                    context.contentResolver.openInputStream(cueInfo.contentUri)?.use { it.readBytes() }
+                } else null
+            } catch (_: Exception) {
+                try {
+                    if (cueInfo.contentUri != null) {
+                        context.contentResolver.openInputStream(cueInfo.contentUri)?.use { it.readBytes() }
+                    } else null
+                } catch (_: Exception) {
+                    null
+                }
+            }
+
+            if (bytes != null && bytes.isNotEmpty()) {
+                val cueSheet = CueSheetParser.parseBytes(bytes)
+                if (cueSheet != null && cueSheet.tracks.isNotEmpty()) {
+                    Log.d(TAG, "Berhasil parse CUE: ${cueInfo.fileName} (${cueSheet.albumTitle}, ${cueSheet.tracks.size} tracks)")
+
+                    // Cari calon lagu parent: pertama di folder yang sama, atau fallback ke album yang sama
+                    val folderTracks = tracks.filter { t ->
+                        t.folderPath.equals(cueInfo.folder, ignoreCase = true) ||
+                                (t.folderPath.isNotEmpty() && cueInfo.folder.isNotEmpty() &&
+                                        File(t.folderPath).name.equals(File(cueInfo.folder).name, ignoreCase = true))
+                    }
+
+                    val candidates = if (folderTracks.isNotEmpty()) folderTracks else tracks.filter { t ->
+                        cueSheet.albumTitle.isNotBlank() && t.album.equals(cueSheet.albumTitle, ignoreCase = true)
+                    }
+
+                    // Algoritma Smart Scoring Matcher untuk menentukan lagu monolithic parent yang tepat
+                    var bestScore = 0
+                    var bestMatch: Track? = null
+
+                    val cueAudioName = cueSheet.audioFileName
+                    val cueAudioBase = File(cueAudioName).nameWithoutExtension
+                    val cueBaseName = File(cueInfo.fileName).nameWithoutExtension
+
+                    for (t in candidates) {
+                        if (replacedParentIds.contains(t.id)) continue
+
+                        var score = 0
+                        val tFileName = trackFileNames[t.id] ?: ""
+                        val tBaseName = File(tFileName).nameWithoutExtension
+
+                        // 1. Nama file persis atau base name sama
+                        if (cueAudioName.isNotEmpty() && tFileName.equals(cueAudioName, ignoreCase = true)) {
+                            score += 100
+                        }
+                        if (cueAudioBase.isNotEmpty() && tBaseName.equals(cueAudioBase, ignoreCase = true)) {
+                            score += 90
+                        }
+                        if (cueBaseName.isNotEmpty() && tBaseName.equals(cueBaseName, ignoreCase = true)) {
+                            score += 90
+                        }
+
+                        // 2. Substring matching (misal "幽閉サテライト - 永遠の都で" mengandung "永遠の都で")
+                        if (cueBaseName.isNotEmpty() && (tBaseName.contains(cueBaseName, ignoreCase = true) || cueBaseName.contains(tBaseName, ignoreCase = true))) {
+                            score += 60
+                        }
+                        if (cueAudioBase.isNotEmpty() && (tBaseName.contains(cueAudioBase, ignoreCase = true) || cueAudioBase.contains(tBaseName, ignoreCase = true))) {
+                            score += 60
+                        }
+
+                        // 3. Album title matching
+                        if (cueSheet.albumTitle.isNotBlank()) {
+                            if (t.album.equals(cueSheet.albumTitle, ignoreCase = true)) {
+                                score += 50
+                            } else if (t.album.contains(cueSheet.albumTitle, ignoreCase = true) || cueSheet.albumTitle.contains(t.album, ignoreCase = true)) {
+                                score += 30
+                            }
+                            if (t.title.contains(cueSheet.albumTitle, ignoreCase = true)) {
+                                score += 25
+                            }
+                        }
+
+                        // 4. Monolithic audio rip matching (durasi panjang > 10 menit)
+                        val lastCueTrackStart = cueSheet.tracks.lastOrNull()?.startMs ?: 0L
+                        if (t.durationMs > 600_000L) {
+                            if (lastCueTrackStart > 0L && t.durationMs >= lastCueTrackStart) {
+                                score += 40
+                            } else {
+                                score += 20
+                            }
+                        }
+
+                        // 5. Jika satu-satunya lagu dalam folder tersebut
+                        if (candidates.size == 1) {
+                            score += 25
+                        }
+
+                        if (score > bestScore) {
+                            bestScore = score
+                            bestMatch = t
+                        }
+                    }
+
+                    val parentTrack = if (bestScore >= 25) bestMatch else null
+
+                    if (parentTrack != null && !replacedParentIds.contains(parentTrack.id)) {
+                        Log.d(TAG, "Cocok! Parent '${parentTrack.title}' (id=${parentTrack.id}, score=$bestScore) digantikan ${cueSheet.tracks.size} virtual tracks")
+                        replacedParentIds.add(parentTrack.id)
+                        finalTracks.removeAll { it.id == parentTrack.id }
+
+                        val cueTracks = cueSheet.tracks.map { cueTrack ->
+                            val cueTrackId = -(parentTrack.id * 1000L + cueTrack.trackNo)
+                            val trackEndMs = if (cueTrack.endMs > 0L) cueTrack.endMs else parentTrack.durationMs
+                            val trackDuration = (trackEndMs - cueTrack.startMs).coerceAtLeast(0L)
+                            val stat = existingStats[cueTrackId]
+
+                            Track(
+                                id = cueTrackId,
+                                uri = parentTrack.uri,
+                                title = cueTrack.title,
+                                artist = cueTrack.performer.ifEmpty { parentTrack.artist },
+                                album = cueSheet.albumTitle.ifEmpty { parentTrack.album },
+                                albumId = parentTrack.albumId,
+                                durationMs = trackDuration,
+                                trackNo = cueTrack.trackNo,
+                                year = if (cueSheet.year > 0) cueSheet.year else parentTrack.year,
+                                dateAddedSec = parentTrack.dateAddedSec,
+                                folderPath = parentTrack.folderPath,
+                                sizeBytes = if (cueSheet.tracks.isNotEmpty()) parentTrack.sizeBytes / cueSheet.tracks.size else 0L,
+                                playCount = stat?.first ?: 0,
+                                lastPlayedMs = stat?.second ?: 0L,
+                                startMs = cueTrack.startMs,
+                                endMs = trackEndMs,
+                                isCue = true,
+                                parentTrackId = parentTrack.id,
+                            )
+                        }
+
+                        finalTracks.addAll(cueTracks)
+                    } else {
+                        Log.w(TAG, "Tidak ditemukan lagu parent yang cocok untuk CUE ${cueInfo.fileName} (bestScore=$bestScore)")
+                    }
+                }
+            }
+        }
+
         // Simpan ke cache Room DB
-        val entities = tracks.map { TrackEntity.fromDomain(it) }
+        onProgress?.invoke("Menyimpan pustaka musik...")
+        val entities = finalTracks.map { TrackEntity.fromDomain(it) }
         trackDao.replaceAll(entities)
 
-        tracks
+        Log.d(TAG, "Sinkronisasi selesai: ${finalTracks.size} lagu aktif (termasuk virtual CUE tracks)")
+        finalTracks
     }
 
     /** Menambah hitungan berapa kali lagu telah diputar selesai */

@@ -23,3 +23,8 @@
 
 # --- DataStore Preferences ---
 -keep class androidx.datastore.** { *; }
+
+# --- Domain & Data Models ---
+-keep class com.prinzeugen.nitorimusic.domain.model.** { *; }
+-keep class com.prinzeugen.nitorimusic.data.cue.** { *; }
+-keep class com.prinzeugen.nitorimusic.data.db.entity.** { *; }

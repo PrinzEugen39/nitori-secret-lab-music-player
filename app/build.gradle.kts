@@ -13,8 +13,8 @@ android {
         applicationId = "com.prinzeugen.nitorimusic"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.3"
+        versionCode = 4
+        versionName = "1.0.4"
     }
 
     buildTypes {
@@ -67,4 +67,6 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.palette)
+
+    testImplementation("junit:junit:4.13.2")
 }

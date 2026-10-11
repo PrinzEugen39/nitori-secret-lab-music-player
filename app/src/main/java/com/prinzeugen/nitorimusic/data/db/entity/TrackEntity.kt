@@ -22,6 +22,10 @@ data class TrackEntity(
     val sizeBytes: Long = 0L,
     val playCount: Int = 0,
     val lastPlayedMs: Long = 0L,
+    val startMs: Long = 0L,
+    val endMs: Long = 0L,
+    val isCue: Boolean = false,
+    val parentTrackId: Long? = null,
 ) {
     fun toDomain(): Track = Track(
         id = id,
@@ -38,6 +42,10 @@ data class TrackEntity(
         sizeBytes = sizeBytes,
         playCount = playCount,
         lastPlayedMs = lastPlayedMs,
+        startMs = startMs,
+        endMs = endMs,
+        isCue = isCue,
+        parentTrackId = parentTrackId,
     )
 
     companion object {
@@ -56,6 +64,10 @@ data class TrackEntity(
             sizeBytes = track.sizeBytes,
             playCount = track.playCount,
             lastPlayedMs = track.lastPlayedMs,
+            startMs = track.startMs,
+            endMs = track.endMs,
+            isCue = track.isCue,
+            parentTrackId = track.parentTrackId,
         )
     }
 }

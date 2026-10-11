@@ -44,7 +44,8 @@ object ArtworkLoader {
 
         // 2. Query MediaStore track info jika trackId diketahui untuk mencari albumId & folder jika belum ada
         if (trackId != null) {
-            val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, trackId)
+            val actualTrackId = if (trackId < 0) (-trackId) / 1000L else trackId
+            val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, actualTrackId)
             try {
                 context.contentResolver.query(
                     trackUri,

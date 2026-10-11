@@ -1,55 +1,98 @@
 package com.prinzeugen.nitorimusic.data.cue
 
 import java.io.File
+import java.nio.ByteBuffer
 import java.nio.charset.Charset
+import java.nio.charset.CodingErrorAction
 
 data class CueTrack(
     val trackNo: Int,
     val title: String,
     val performer: String,
     val startMs: Long,
+    val endMs: Long = 0L,
 )
 
 data class CueSheet(
     val albumTitle: String,
     val albumArtist: String,
     val audioFileName: String,
+    val year: Int = 0,
     val tracks: List<CueTrack>,
 )
 
 object CueSheetParser {
 
-    fun parse(file: File): CueSheet? {
-        if (!file.exists() || !file.canRead()) return null
-
-        // Coba baca dengan UTF-8 terlebih dahulu, fallback ke Shift-JIS / Windows-31J jika banyak huruf Jepang
-        val text = try {
-            file.readText(Charsets.UTF_8)
-        } catch (e: Exception) {
+    /**
+     * Decode byte array dengan auto-detection charset:
+     * 1. Cek UTF-8 BOM
+     * 2. Strict UTF-8 decoding (akan error jika byte adalah Shift-JIS)
+     * 3. Fallback ke Windows-31J / Shift-JIS (standar album Doujin/Touhou Jepang)
+     * 4. Fallback ke ISO-8859-1 jika encoding lain gagal
+     */
+    fun decodeBytes(bytes: ByteArray): String {
+        if (bytes.isEmpty()) return ""
+        if (bytes.size >= 3 && bytes[0] == 0xEF.toByte() && bytes[1] == 0xBB.toByte() && bytes[2] == 0xBF.toByte()) {
+            return String(bytes, 3, bytes.size - 3, Charsets.UTF_8)
+        }
+        val utf8Decoder = Charsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
+        val byteBuffer = ByteBuffer.wrap(bytes)
+        return try {
+            utf8Decoder.decode(byteBuffer).toString()
+        } catch (_: Exception) {
             try {
-                file.readText(Charset.forName("Shift_JIS"))
-            } catch (e2: Exception) {
-                return null
+                String(bytes, Charset.forName("Windows-31J"))
+            } catch (_: Exception) {
+                try {
+                    String(bytes, Charset.forName("Shift_JIS"))
+                } catch (_: Exception) {
+                    String(bytes, Charsets.ISO_8859_1)
+                }
             }
         }
+    }
+
+    fun parse(file: File): CueSheet? {
+        if (!file.exists() || !file.canRead()) return null
+        return try {
+            val bytes = file.readBytes()
+            parseBytes(bytes)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun parseBytes(bytes: ByteArray): CueSheet? {
+        val text = decodeBytes(bytes)
+        if (text.isBlank()) return null
 
         var albumTitle = ""
         var albumArtist = ""
         var audioFileName = ""
-        val tracks = mutableListOf<CueTrack>()
+        var albumYear = 0
+        val rawTracks = mutableListOf<CueTrack>()
 
         var currentTrackNo: Int? = null
         var currentTrackTitle = ""
         var currentTrackArtist = ""
         var currentTrackStartMs = 0L
 
+        val fileRegex = Regex("""FILE\s+"([^"]+)"|FILE\s+([^\s]+)""", RegexOption.IGNORE_CASE)
+        val dateRegex = Regex("""REM\s+(?:DATE|YEAR)\s+(\d{4})""", RegexOption.IGNORE_CASE)
+        val trackRegex = Regex("""TRACK\s+(\d+)""", RegexOption.IGNORE_CASE)
+        val index01Regex = Regex("""INDEX\s+01\s+(\d+):(\d+):(\d+)""", RegexOption.IGNORE_CASE)
+        val index00Regex = Regex("""INDEX\s+00\s+(\d+):(\d+):(\d+)""", RegexOption.IGNORE_CASE)
+
         fun flushTrack() {
             currentTrackNo?.let { no ->
-                tracks += CueTrack(
+                rawTracks += CueTrack(
                     trackNo = no,
                     title = currentTrackTitle.ifEmpty { "Track %02d".format(no) },
                     performer = currentTrackArtist.ifEmpty { albumArtist },
                     startMs = currentTrackStartMs,
+                    endMs = 0L,
                 )
             }
             currentTrackNo = null
@@ -72,40 +115,65 @@ object CueSheetParser {
                     else currentTrackTitle = value
                 }
                 line.startsWith("FILE", ignoreCase = true) -> {
-                    audioFileName = line.substringAfter("FILE").trim()
-                        .substringBeforeLast("\"")
-                        .removePrefix("\"")
+                    fileRegex.find(line)?.let { match ->
+                        val extracted = match.groupValues[1].ifEmpty { match.groupValues[2] }.trim()
+                        audioFileName = File(extracted).name
+                    }
+                }
+                line.startsWith("REM", ignoreCase = true) -> {
+                    dateRegex.find(line)?.let { match ->
+                        albumYear = match.groupValues[1].toIntOrNull() ?: albumYear
+                    }
                 }
                 line.startsWith("TRACK", ignoreCase = true) -> {
                     flushTrack()
-                    val parts = line.split("\\s+".toRegex())
-                    currentTrackNo = parts.getOrNull(1)?.toIntOrNull()
+                    trackRegex.find(line)?.let { match ->
+                        currentTrackNo = match.groupValues[1].toIntOrNull()
+                    }
                 }
                 line.startsWith("INDEX 01", ignoreCase = true) -> {
-                    val timeStr = line.substringAfter("INDEX 01").trim()
-                    currentTrackStartMs = parseCueTime(timeStr)
+                    index01Regex.find(line)?.let { match ->
+                        currentTrackStartMs = parseCueTime(
+                            match.groupValues[1],
+                            match.groupValues[2],
+                            match.groupValues[3]
+                        )
+                    }
+                }
+                line.startsWith("INDEX 00", ignoreCase = true) && currentTrackStartMs == 0L -> {
+                    index00Regex.find(line)?.let { match ->
+                        currentTrackStartMs = parseCueTime(
+                            match.groupValues[1],
+                            match.groupValues[2],
+                            match.groupValues[3]
+                        )
+                    }
                 }
             }
         }
         flushTrack()
 
-        return if (tracks.isNotEmpty()) {
-            CueSheet(
-                albumTitle = albumTitle,
-                albumArtist = albumArtist,
-                audioFileName = audioFileName,
-                tracks = tracks,
-            )
-        } else null
+        if (rawTracks.isEmpty()) return null
+
+        // Hitung batas endMs antar lagu secara berurutan
+        val resolvedTracks = rawTracks.mapIndexed { index, track ->
+            val nextStart = rawTracks.getOrNull(index + 1)?.startMs ?: 0L
+            track.copy(endMs = nextStart)
+        }
+
+        return CueSheet(
+            albumTitle = albumTitle,
+            albumArtist = albumArtist,
+            audioFileName = audioFileName,
+            year = albumYear,
+            tracks = resolvedTracks,
+        )
     }
 
-    private fun parseCueTime(time: String): Long {
-        val parts = time.split(":")
-        if (parts.size < 3) return 0L
-        val min = parts[0].toLongOrNull() ?: 0L
-        val sec = parts[1].toLongOrNull() ?: 0L
-        val frame = parts[2].toLongOrNull() ?: 0L // 75 frames per second
-        return (min * 60 * 1000) + (sec * 1000) + (frame * 1000 / 75)
+    private fun parseCueTime(minStr: String, secStr: String, frameStr: String): Long {
+        val min = minStr.toLongOrNull() ?: 0L
+        val sec = secStr.toLongOrNull() ?: 0L
+        val frame = frameStr.toLongOrNull() ?: 0L // 75 frames per second
+        return (min * 60_000L) + (sec * 1_000L) + (frame * 1_000L / 75L)
     }
 }
-

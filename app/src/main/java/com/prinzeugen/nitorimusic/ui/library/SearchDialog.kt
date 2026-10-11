@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -132,13 +133,20 @@ fun SearchDialog(
                                     overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
-                                Text(
-                                    "${track.artist} • ${track.album}",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "${track.artist} • ${track.album}",
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    if (track.isCue || track.id < 0L) {
+                                        Spacer(Modifier.width(6.dp))
+                                        com.prinzeugen.nitorimusic.ui.components.CueBadge()
+                                    }
+                                }
                             }
                             Text(
                                 formatTime(track.durationMs),

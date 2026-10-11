@@ -86,6 +86,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
     var dominantColor by remember { mutableStateOf(Color.Transparent) }
 
     val albumArtFitMode by viewModel.albumArtFitMode.collectAsState()
+    val isShuffleOn by viewModel.isShuffleOn.collectAsState()
     val allTracks by viewModel.tracks.collectAsState()
     val currentTrack = remember(state.currentMediaId, allTracks) {
         val tId = state.currentMediaId?.toLongOrNull()
@@ -327,14 +328,22 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = state.artist.ifEmpty { "Artis tidak diketahui" },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = state.artist.ifEmpty { "Artis tidak diketahui" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if ((state.currentMediaId?.toLongOrNull() ?: 0L) < 0L) {
+                        Spacer(Modifier.width(6.dp))
+                        com.prinzeugen.nitorimusic.ui.components.CueBadge()
+                    }
+                }
                 if (state.album.isNotEmpty()) {
                     Spacer(Modifier.height(2.dp))
                     Text(
@@ -357,11 +366,21 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = viewModel::shuffleAll) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            onClick = viewModel::toggleShuffle,
+                            onLongClick = viewModel::reshuffleCurrentQueue,
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         Icons.Rounded.Shuffle,
                         contentDescription = "Shuffle",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isShuffleOn) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 

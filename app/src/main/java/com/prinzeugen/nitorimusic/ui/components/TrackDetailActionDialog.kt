@@ -142,6 +142,9 @@ fun TrackDetailActionDialog(
                         Spacer(Modifier.height(4.dp))
                         val specsText = buildString {
                             append("♪ ${formatTime(track.durationMs)}")
+                            if (track.isCue || track.id < 0L) {
+                                append(" | cue")
+                            }
                             if (audioSpecs != null && audioSpecs.codec.isNotEmpty()) {
                                 append(" | ${audioSpecs.codec.lowercase()}")
                             }

@@ -70,6 +70,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 
+    private val _scanStatus = MutableStateFlow<String?>(null)
+    val scanStatus: StateFlow<String?> = _scanStatus.asStateFlow()
+
     // State untuk detail view saat klik album/artist/folder (null jika di list utama)
     private val _selectedAlbum = MutableStateFlow<Album?>(null)
     val selectedAlbum: StateFlow<Album?> = _selectedAlbum.asStateFlow()
@@ -80,9 +83,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedFolder = MutableStateFlow<Folder?>(null)
     val selectedFolder: StateFlow<Folder?> = _selectedFolder.asStateFlow()
 
+    private var originalQueueTracks: List<Track> = emptyList()
+    private val _isShuffleOn = MutableStateFlow(false)
+    val isShuffleOn: StateFlow<Boolean> = _isShuffleOn.asStateFlow()
+
     init {
         playback.connect()
         observePlayCountTracking()
+        loadCachedTracksImmediately()
+    }
+
+    /**
+     * Memuat cache Room DB secepat kilat (0-5ms) saat ViewModel tercipta,
+     * sehingga UI langsung menampilkan album, lagu, dan ukuran data tanpa jeda/layar hitam.
+     */
+    private fun loadCachedTracksImmediately() {
+        viewModelScope.launch {
+            val cached = repository.getCachedTracks()
+            if (cached.isNotEmpty()) {
+                _tracks.value = cached
+            }
+        }
     }
 
     private fun observePlayCountTracking() {
@@ -147,24 +168,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Memuat library secara offline-first:
-     * Muat dari Room DB cache langsung agar UI instan,
-     * lalu lakukan sinkronisasi MediaStore di background.
+     * Memuat library secara offline-first ala Poweramp:
+     * Selalu pastikan Room DB cache tampil langsung sehingga UI 0ms instan,
+     * lalu lakukan sinkronisasi MediaStore & CUE parsing di background.
      */
     fun refreshLibrary(forceSync: Boolean = false) {
         viewModelScope.launch {
-            if (!forceSync) {
+            if (!forceSync || _tracks.value.isEmpty()) {
                 val cached = repository.getCachedTracks()
                 if (cached.isNotEmpty()) {
                     _tracks.value = cached
                 }
             }
             _isScanning.value = true
+            _scanStatus.value = "Memeriksa berkas musik..."
             try {
-                val synced = repository.syncFromMediaStore()
+                val synced = repository.syncFromMediaStore { status ->
+                    _scanStatus.value = status
+                }
                 _tracks.value = synced
             } finally {
                 _isScanning.value = false
+                _scanStatus.value = null
             }
         }
     }
@@ -176,12 +201,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun clearCacheAndRescan() {
         viewModelScope.launch {
             _isScanning.value = true
+            _scanStatus.value = "Menghapus cache & memindai ulang..."
             try {
                 repository.clearCache()
-                val synced = repository.syncFromMediaStore()
+                val synced = repository.syncFromMediaStore { status ->
+                    _scanStatus.value = status
+                }
                 _tracks.value = synced
             } finally {
                 _isScanning.value = false
+                _scanStatus.value = null
             }
         }
     }
@@ -228,6 +257,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (keepQueueOnPlay.value && playback.state.value.queue.isNotEmpty()) {
             playback.playTrackInQueueOrInsert(targetTrack)
         } else {
+            originalQueueTracks = tracks
+            _isShuffleOn.value = false
             playback.playAll(tracks, index)
         }
     }
@@ -237,6 +268,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (keepQueueOnPlay.value && playback.state.value.queue.isNotEmpty()) {
             playback.playTrackInQueueOrInsert(targetTrack)
         } else {
+            originalQueueTracks = trackList
+            _isShuffleOn.value = false
             playback.playAll(trackList, startIndex)
         }
     }
@@ -264,6 +297,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun shuffleTracks(trackList: List<Track>) {
         if (trackList.isEmpty()) return
+        originalQueueTracks = trackList
+        _isShuffleOn.value = true
         val engine = SmartShuffle(shuffleSpread.value)
         playback.playAll(engine.shuffle(trackList), 0)
     }
@@ -271,6 +306,83 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Bangun urutan acak sekali dari seluruh library */
     fun shuffleAll() {
         shuffleTracks(_tracks.value)
+    }
+
+    /**
+     * Poweramp-style Shuffle Toggle di Now Playing:
+     * - Saat diaktifkan (ON): Lagu yang sedang dibuka menjadi lagu pertama (#1),
+     *   lalu sisa lagu dalam album diacak di belakangnya tanpa memotong audio.
+     * - Saat dimatikan (OFF): Antrean dikembalikan ke urutan sequential album (1..N),
+     *   dengan lagu yang sedang berputar tetap di track indeks aslinya (misal track 3 / total).
+     */
+    fun toggleShuffle() {
+        val currentQueue = playback.state.value.queue
+        if (currentQueue.isEmpty()) return
+
+        val currentMediaId = playback.state.value.currentMediaId ?: return
+        val currentTrackId = currentMediaId.toLongOrNull() ?: return
+        val currentPos = playback.positionMs()
+
+        var baseTracks = originalQueueTracks
+        if (baseTracks.isEmpty()) {
+            val currentTrack = _tracks.value.find { it.id == currentTrackId }
+            baseTracks = if (currentTrack != null) {
+                getTracksForAlbum(currentTrack.albumId).ifEmpty {
+                    _tracks.value.filter { t -> currentQueue.any { it.mediaId == t.id.toString() } }
+                }
+            } else {
+                _tracks.value.filter { t -> currentQueue.any { it.mediaId == t.id.toString() } }
+            }
+            originalQueueTracks = baseTracks
+        }
+
+        val currentTrack = baseTracks.find { it.id == currentTrackId }
+            ?: _tracks.value.find { it.id == currentTrackId }
+            ?: return
+
+        if (!_isShuffleOn.value) {
+            // SHUFFLE ON: Lagu saat ini urutan #1, sisa lagu diacak di belakangnya
+            val otherTracks = baseTracks.filter { it.id != currentTrack.id }
+            val engine = SmartShuffle(shuffleSpread.value)
+            val shuffledOthers = engine.shuffle(otherTracks)
+            val newQueue = listOf(currentTrack) + shuffledOthers
+
+            playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
+            _isShuffleOn.value = true
+        } else {
+            // SHUFFLE OFF: Kembalikan ke urutan sequential album asli (misal 1..N)
+            val originalIndex = baseTracks.indexOfFirst { it.id == currentTrack.id }.coerceAtLeast(0)
+            playback.setQueueKeepPosition(baseTracks, startIndex = originalIndex, positionMs = currentPos)
+            _isShuffleOn.value = false
+        }
+    }
+
+    /** Re-shuffle ulang seluruh sisa antrean dengan lagu saat ini tetap sebagai lagu #1 */
+    fun reshuffleCurrentQueue() {
+        val currentQueue = playback.state.value.queue
+        if (currentQueue.isEmpty()) return
+
+        val currentMediaId = playback.state.value.currentMediaId ?: return
+        val currentTrackId = currentMediaId.toLongOrNull() ?: return
+        val currentPos = playback.positionMs()
+
+        var baseTracks = originalQueueTracks
+        if (baseTracks.isEmpty()) {
+            baseTracks = _tracks.value.filter { t -> currentQueue.any { it.mediaId == t.id.toString() } }
+            originalQueueTracks = baseTracks
+        }
+
+        val currentTrack = baseTracks.find { it.id == currentTrackId }
+            ?: _tracks.value.find { it.id == currentTrackId }
+            ?: return
+
+        val otherTracks = baseTracks.filter { it.id != currentTrack.id }
+        val engine = SmartShuffle(shuffleSpread.value)
+        val shuffledOthers = engine.shuffle(otherTracks)
+        val newQueue = listOf(currentTrack) + shuffledOthers
+
+        playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
+        _isShuffleOn.value = true
     }
 
     fun setShuffleSpread(value: Float) {

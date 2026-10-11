@@ -17,6 +17,10 @@ data class Track(
     val sizeBytes: Long = 0L,
     val playCount: Int = 0,
     val lastPlayedMs: Long = 0L,
+    val startMs: Long = 0L,
+    val endMs: Long = 0L,
+    val isCue: Boolean = false,
+    val parentTrackId: Long? = null,
 )
 
 data class Album(

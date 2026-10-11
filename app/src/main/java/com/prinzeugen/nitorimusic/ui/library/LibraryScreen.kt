@@ -1,5 +1,10 @@
 package com.prinzeugen.nitorimusic.ui.library
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,15 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,6 +58,8 @@ fun LibraryScreen(
     val selectedAlbum by viewModel.selectedAlbum.collectAsState()
     val selectedArtist by viewModel.selectedArtist.collectAsState()
     val selectedFolder by viewModel.selectedFolder.collectAsState()
+    val isScanning by viewModel.isScanning.collectAsState()
+    val scanStatus by viewModel.scanStatus.collectAsState()
 
     var showListOptions by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
@@ -169,6 +180,10 @@ fun LibraryScreen(
                                     }
                                 }
 
+                                IconButton(onClick = { viewModel.refreshLibrary(forceSync = true) }) {
+                                    Icon(Icons.Rounded.Refresh, contentDescription = "Pindai Ulang Library")
+                                }
+
                                 Button(
                                     onClick = {
                                         if (currentTab == LibraryTab.MOST_PLAYED && mostPlayed.isNotEmpty()) {
@@ -183,6 +198,38 @@ fun LibraryScreen(
                                     Icon(Icons.Rounded.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))
                                     Text("Shuffle all")
+                                }
+                            }
+                        }
+
+                        // Banner Progress Scanning di Latar Belakang (Poweramp-style)
+                        AnimatedVisibility(
+                            visible = isScanning,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CircularProgressIndicator(
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        text = scanStatus ?: "Menyinkronkan pustaka musik...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
                                 }
                             }
                         }

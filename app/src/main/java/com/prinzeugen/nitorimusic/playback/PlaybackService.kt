@@ -202,6 +202,10 @@ class PlaybackService : MediaSessionService() {
                             m.mediaId.toLongOrNull() ?: 0L
                         ).toString()
                     val albumId = m.mediaMetadata.artworkUri?.lastPathSegment?.toLongOrNull() ?: 0L
+                    val clipConfig = m.clippingConfiguration
+                    val startMs = if (clipConfig.startPositionMs != androidx.media3.common.C.TIME_UNSET) clipConfig.startPositionMs else 0L
+                    val endMs = if (clipConfig.endPositionMs != androidx.media3.common.C.TIME_END_OF_SOURCE && clipConfig.endPositionMs != androidx.media3.common.C.TIME_UNSET) clipConfig.endPositionMs else 0L
+                    val isCue = (endMs > startMs || startMs > 0L)
 
                     items.add(
                         SavedQueueItem(
@@ -212,6 +216,9 @@ class PlaybackService : MediaSessionService() {
                             artist = m.mediaMetadata.artist?.toString().orEmpty(),
                             album = m.mediaMetadata.albumTitle?.toString().orEmpty(),
                             albumId = albumId,
+                            startMs = startMs,
+                            endMs = endMs,
+                            isCue = isCue,
                         )
                     )
                 }
@@ -254,7 +261,7 @@ class PlaybackService : MediaSessionService() {
             Uri.parse("content://media/external/audio/albumart"),
             albumId
         )
-        return MediaItem.Builder()
+        val builder = MediaItem.Builder()
             .setMediaId(trackId.toString())
             .setUri(uri)
             .setRequestMetadata(
@@ -270,7 +277,15 @@ class PlaybackService : MediaSessionService() {
                     .setArtworkUri(artUri)
                     .build()
             )
-            .build()
+        if (isCue && endMs > startMs) {
+            builder.setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs(startMs)
+                    .setEndPositionMs(endMs)
+                    .build()
+            )
+        }
+        return builder.build()
     }
 
     private inner class SessionCallback : MediaSession.Callback {

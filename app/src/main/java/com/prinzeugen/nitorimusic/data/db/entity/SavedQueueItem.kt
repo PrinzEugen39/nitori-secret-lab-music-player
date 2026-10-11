@@ -15,4 +15,7 @@ data class SavedQueueItem(
     val album: String,
     val albumId: Long,
     val durationMs: Long = 0L,
+    val startMs: Long = 0L,
+    val endMs: Long = 0L,
+    val isCue: Boolean = false,
 )

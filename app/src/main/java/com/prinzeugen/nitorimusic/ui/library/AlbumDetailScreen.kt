@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.prinzeugen.nitorimusic.domain.model.Album
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -194,12 +195,19 @@ fun AlbumDetailScreen(
                             color = if (isCurrent) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            track.artist,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                track.artist,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (track.isCue || track.id < 0L) {
+                                Spacer(Modifier.width(6.dp))
+                                com.prinzeugen.nitorimusic.ui.components.CueBadge()
+                            }
+                        }
                     }
                     Text(
                         formatTime(track.durationMs),
