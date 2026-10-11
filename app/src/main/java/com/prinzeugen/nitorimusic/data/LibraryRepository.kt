@@ -164,16 +164,23 @@ class LibraryRepository(private val context: Context) {
                     continue
                 }
 
-                // 2. Jika user menentukan folder musik terpilih (Whitelist), batasi hanya dalam folder tersebut
-                if (enabledFolders.isNotEmpty()) {
-                    val isInSelectedFolder = enabledFolders.any { selected ->
-                        val normSelected = selected.lowercase().trimEnd('/', '\\')
-                        val normFolder = folder.lowercase().trimEnd('/', '\\')
-                        normFolder == normSelected || normFolder.startsWith("$normSelected/")
-                    }
-                    if (!isInSelectedFolder) {
-                        continue
-                    }
+                // 2. Batasi hanya dalam folder terpilih (atau default folder Music jika belum diatur)
+                val effectiveFolders = if (enabledFolders.isNotEmpty()) {
+                    enabledFolders
+                } else {
+                    listOf(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath,
+                        "/storage/emulated/0/Music",
+                    )
+                }
+
+                val isInSelectedFolder = effectiveFolders.any { selected ->
+                    val normSelected = selected.lowercase().trimEnd('/', '\\')
+                    val normFolder = folder.lowercase().trimEnd('/', '\\')
+                    normFolder == normSelected || normFolder.startsWith("$normSelected/")
+                }
+                if (!isInSelectedFolder) {
+                    continue
                 }
 
                 val stat = existingStats[id]

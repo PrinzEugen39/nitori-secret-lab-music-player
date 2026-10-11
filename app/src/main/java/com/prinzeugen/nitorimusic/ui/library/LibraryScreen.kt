@@ -6,11 +6,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,6 +24,8 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,12 +37,15 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.prinzeugen.nitorimusic.domain.model.LibraryTab
@@ -61,10 +68,19 @@ fun LibraryScreen(
     val selectedFolder by viewModel.selectedFolder.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
     val scanStatus by viewModel.scanStatus.collectAsState()
+    val selectedMusicFolders by viewModel.selectedMusicFolders.collectAsState()
 
     var showListOptions by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var showFolderSelection by remember { mutableStateOf(false) }
+
+    // Onboarding otomatis: Jika pustaka kosong dan belum ada folder terpilih,
+    // langsung tampilkan dialog Folders Selection (dengan saran folder Music)
+    LaunchedEffect(tracks.isEmpty(), selectedMusicFolders.isEmpty(), isScanning) {
+        if (tracks.isEmpty() && selectedMusicFolders.isEmpty() && !isScanning) {
+            showFolderSelection = true
+        }
+    }
 
     if (showSearch) {
         SearchDialog(
@@ -77,7 +93,6 @@ fun LibraryScreen(
     }
 
     if (showFolderSelection) {
-        val selectedMusicFolders by viewModel.selectedMusicFolders.collectAsState()
         FolderSelectionDialog(
             initialFolders = selectedMusicFolders,
             onSaveAndScan = viewModel::saveMusicFolders,
@@ -253,7 +268,60 @@ fun LibraryScreen(
 
                         // Content per tab dengan support dynamic gridColumns dan tabStateHolder
                         Column(Modifier.weight(1f)) {
-                            tabStateHolder.SaveableStateProvider(currentTab) {
+                            if (tracks.isEmpty() && !isScanning) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Card(
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        ),
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(24.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.FolderOpen,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(56.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(Modifier.height(16.dp))
+                                            Text(
+                                                "Pilih Folder Musik",
+                                                style = MaterialTheme.typography.titleLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(
+                                                "Tentukan folder koleksi musik Anda (seperti Music) untuk pemindaian kilat ala Poweramp dan otomatis mengabaikan audio chat/rekaman.",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                textAlign = TextAlign.Center
+                                            )
+                                            Spacer(Modifier.height(20.dp))
+                                            Button(
+                                                onClick = { showFolderSelection = true },
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Rounded.FolderOpen,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(Modifier.width(8.dp))
+                                                Text("Pilih Folder Musik")
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                tabStateHolder.SaveableStateProvider(currentTab) {
                                 when (currentTab) {
                                     LibraryTab.ALBUMS -> {
                                         AlbumsTabContent(
@@ -311,3 +379,5 @@ fun LibraryScreen(
         }
     }
 }
+}
+

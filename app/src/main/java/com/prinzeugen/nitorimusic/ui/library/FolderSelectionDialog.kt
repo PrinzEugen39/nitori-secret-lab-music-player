@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -67,8 +68,25 @@ fun FolderSelectionDialog(
     onSaveAndScan: (List<MusicFolder>) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val defaultCandidates = remember {
+        if (initialFolders.isNotEmpty()) {
+            initialFolders
+        } else {
+            val defaultMusicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+            val fallbackPath = File("/storage/emulated/0/Music")
+            val targetDir = if (defaultMusicDir.exists()) defaultMusicDir else fallbackPath
+            listOf(
+                MusicFolder(
+                    path = targetDir.absolutePath,
+                    displayName = "Music",
+                    storageLabel = Build.MODEL.ifEmpty { "Internal Storage" },
+                    isEnabled = true
+                )
+            )
+        }
+    }
+    var folders by remember { mutableStateOf(defaultCandidates) }
     val context = LocalContext.current
-    var folders by remember { mutableStateOf(initialFolders) }
 
     // Launcher Document Tree Picker untuk memilih folder musik (SAF)
     val folderPickerLauncher = rememberLauncherForActivityResult(
@@ -245,11 +263,28 @@ fun FolderSelectionDialog(
 
                 Spacer(Modifier.height(8.dp))
 
+                val hasActiveFolder = folders.any { it.isEnabled }
+
+                if (!hasActiveFolder) {
+                    Text(
+                        text = "Pilih minimal 1 folder musik yang aktif untuk memindai.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
                 Button(
                     onClick = {
-                        onSaveAndScan(folders)
-                        onDismiss()
+                        if (hasActiveFolder) {
+                            onSaveAndScan(folders)
+                            onDismiss()
+                        }
                     },
+                    enabled = hasActiveFolder,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(

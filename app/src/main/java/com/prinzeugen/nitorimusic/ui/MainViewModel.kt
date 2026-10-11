@@ -181,13 +181,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun ensureLibraryLoaded() {
         viewModelScope.launch {
-            val enabledFolders = settings.selectedMusicFolders.first().filter { it.isEnabled }.map { it.path }
+            val configured = settings.selectedMusicFolders.first()
+            val enabledFolders = configured.filter { it.isEnabled }.map { it.path }
             val cached = repository.getCachedTracks(enabledFolders)
             if (cached.isNotEmpty()) {
                 _tracks.value = cached
-            } else {
+            } else if (configured.isNotEmpty()) {
                 refreshLibrary(forceSync = true)
             }
+            // Jika folder belum dipilih (pertama kali buka / kosong),
+            // JANGAN lakukan blind scan seluruh HP! UI akan memandu memilih folder.
         }
     }
 
@@ -224,6 +227,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveMusicFolders(folders: List<MusicFolder>) {
+        val enabledFolders = folders.filter { it.isEnabled }
+        if (enabledFolders.isEmpty()) return
         viewModelScope.launch {
             settings.setSelectedMusicFolders(folders)
             refreshLibrary(forceSync = true)
@@ -232,11 +237,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearCacheAndRescan() {
         viewModelScope.launch {
+            val configured = settings.selectedMusicFolders.first()
+            val enabledFolders = configured.filter { it.isEnabled }.map { it.path }
             _isScanning.value = true
             _scanStatus.value = "Menghapus cache & memindai ulang..."
             try {
                 repository.clearCache()
-                val synced = repository.syncFromMediaStore { status ->
+                val synced = repository.syncFromMediaStore(enabledFolders = enabledFolders) { status ->
                     _scanStatus.value = status
                 }
                 _tracks.value = synced
