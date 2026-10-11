@@ -71,15 +71,16 @@ fun LibraryScreen(
     val isScanning by viewModel.isScanning.collectAsState()
     val scanStatus by viewModel.scanStatus.collectAsState()
     val selectedMusicFolders by viewModel.selectedMusicFolders.collectAsState()
+    val isInitialLoaded by viewModel.isInitialLoaded.collectAsState()
 
     var showListOptions by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var showFolderSelection by remember { mutableStateOf(false) }
 
-    // Onboarding otomatis: Jika pustaka kosong dan belum ada folder terpilih,
-    // langsung tampilkan dialog Folders Selection (dengan saran folder Music)
-    LaunchedEffect(tracks.isEmpty(), selectedMusicFolders.isEmpty(), isScanning) {
-        if (tracks.isEmpty() && selectedMusicFolders.isEmpty() && !isScanning) {
+    // Onboarding otomatis: Hanya jika DB sudah selesai dicek dan memang benar-benar kosong,
+    // tampilkan dialog Folders Selection (dengan saran folder Music)
+    LaunchedEffect(isInitialLoaded, tracks.isEmpty(), selectedMusicFolders.isEmpty(), isScanning) {
+        if (isInitialLoaded && tracks.isEmpty() && selectedMusicFolders.isEmpty() && !isScanning) {
             showFolderSelection = true
         }
     }
@@ -272,7 +273,7 @@ fun LibraryScreen(
 
                         // Content per tab dengan support dynamic gridColumns dan tabStateHolder
                         Column(Modifier.weight(1f)) {
-                            if (tracks.isEmpty() && !isScanning) {
+                            if (isInitialLoaded && tracks.isEmpty() && !isScanning) {
                                 Box(
                                     modifier = Modifier.fillMaxSize().padding(24.dp),
                                     contentAlignment = Alignment.Center

@@ -100,6 +100,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _isShuffleOn = MutableStateFlow(false)
     val isShuffleOn: StateFlow<Boolean> = _isShuffleOn.asStateFlow()
 
+    private val _isInitialLoaded = MutableStateFlow(false)
+    val isInitialLoaded: StateFlow<Boolean> = _isInitialLoaded.asStateFlow()
+
     init {
         playback.connect()
         observePlayCountTracking()
@@ -112,9 +115,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun loadCachedTracksImmediately() {
         viewModelScope.launch {
-            val cached = repository.getCachedTracks()
-            if (cached.isNotEmpty()) {
-                _tracks.value = cached
+            try {
+                val cached = repository.getCachedTracks()
+                if (cached.isNotEmpty()) {
+                    _tracks.value = cached
+                }
+            } finally {
+                _isInitialLoaded.value = true
             }
         }
     }

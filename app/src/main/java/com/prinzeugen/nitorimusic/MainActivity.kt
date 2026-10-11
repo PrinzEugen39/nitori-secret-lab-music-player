@@ -9,10 +9,15 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.content.res.Configuration
-import androidx.activity.ComponentActivity
+import android.content.ContextWrapper
+import android.content.res.Resources
+import android.os.LocaleList
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultRegistry
+import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material3.AlertDialog
@@ -36,6 +41,7 @@ import com.prinzeugen.nitorimusic.ui.AppRoot
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.theme.NitoriMusicTheme
 import java.util.Locale
+import androidx.activity.ComponentActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -67,38 +73,55 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val appLanguage by viewModel.appLanguage.collectAsState()
-            val baseContext = LocalContext.current
             val baseConfig = LocalConfiguration.current
 
             val targetLocale = remember(appLanguage) {
                 when (appLanguage) {
                     "en" -> Locale.ENGLISH
-                    "in" -> Locale("in")
+                    "in", "id" -> Locale("in", "ID")
                     else -> null
                 }
+            }
+
+            LaunchedEffect(targetLocale) {
+                val target = targetLocale ?: Locale.getDefault()
+                Locale.setDefault(target)
+                val config = Configuration(resources.configuration)
+                config.setLocale(target)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    val localeList = LocaleList(target)
+                    LocaleList.setDefault(localeList)
+                    config.setLocales(localeList)
+                }
+                @Suppress("DEPRECATION")
+                resources.updateConfiguration(config, resources.displayMetrics)
+                @Suppress("DEPRECATION")
+                applicationContext.resources.updateConfiguration(config, applicationContext.resources.displayMetrics)
             }
 
             val localizedConfiguration = remember(targetLocale, baseConfig) {
                 Configuration(baseConfig).apply {
                     if (targetLocale != null) {
                         setLocale(targetLocale)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            setLocales(LocaleList(targetLocale))
+                        }
                     }
                 }
             }
 
-            val localizedContext = remember(targetLocale, baseContext) {
+            val localizedContext = remember(targetLocale) {
                 if (targetLocale != null) {
-                    val config = Configuration(baseContext.resources.configuration)
-                    config.setLocale(targetLocale)
-                    baseContext.createConfigurationContext(config)
+                    LocalizedActivityContext(this@MainActivity, localizedConfiguration)
                 } else {
-                    baseContext
+                    this@MainActivity
                 }
             }
 
             CompositionLocalProvider(
                 LocalConfiguration provides localizedConfiguration,
-                LocalContext provides localizedContext
+                LocalContext provides localizedContext,
+                LocalActivityResultRegistryOwner provides this@MainActivity
             ) {
                 NitoriMusicTheme {
                     val context = LocalContext.current
@@ -173,4 +196,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+private class LocalizedActivityContext(
+    private val activity: ComponentActivity,
+    private val localizedConfig: Configuration
+) : ContextWrapper(activity), ActivityResultRegistryOwner {
+
+    private val localizedRes: Resources by lazy {
+        activity.createConfigurationContext(localizedConfig).resources
+    }
+
+    override fun getResources(): Resources = localizedRes
+
+    override val activityResultRegistry: ActivityResultRegistry
+        get() = activity.activityResultRegistry
 }

@@ -1,0 +1,213 @@
+<resources>
+    <string name="app_name">Nitori Music</string>
+
+    <!-- General & Actions -->
+    <string name="back">Kembali</string>
+    <string name="close">Tutup</string>
+    <string name="cancel">Batal</string>
+    <string name="play">Putar</string>
+    <string name="pause">Jeda</string>
+    <string name="previous">Sebelumnya</string>
+    <string name="next">Selanjutnya</string>
+    <string name="shuffle">Acak</string>
+    <string name="shuffle_all">Acak semua</string>
+    <string name="repeat">Ulangi</string>
+    <string name="library">Pustaka</string>
+    <string name="now_playing">Sedang Diputar</string>
+    <string name="search">Cari</string>
+    <string name="queue">Antrean</string>
+    <string name="up_next">Antrean berikutnya (%1$d)</string>
+    <string name="settings">Pengaturan</string>
+    <string name="options">Opsi</string>
+    <string name="all">Semua</string>
+    <string name="image">Gambar</string>
+    <string name="drag_to_reorder">Tarik untuk geser urutan</string>
+
+    <!-- Permissions -->
+    <string name="permission_audio_required">Izin akses audio dibutuhkan untuk membaca pustaka musik.</string>
+    <string name="cue_permission_dialog_title">Izin Akses Berkas untuk CUE Sheet</string>
+    <string name="cue_permission_dialog_msg">Agar aplikasi dapat mendeteksi berkas .cue (CUE Sheet) dan membagi album menjadi lagu terpisah (seperti di Poweramp), izin Akses Semua Berkas diperlukan.\n\nBuka Pengaturan untuk mengaktifkan izin?</string>
+    <string name="cue_permission_open_settings">Buka Pengaturan</string>
+    <string name="cue_permission_later">Nanti Saja</string>
+
+    <!-- Library Tabs -->
+    <string name="tab_tracks">Lagu</string>
+    <string name="tab_albums">Album</string>
+    <string name="tab_artists">Artis</string>
+    <string name="tab_most_played">Sering Diputar</string>
+    <string name="tab_folders">Folder</string>
+
+    <!-- Library Headers & Counts -->
+    <string name="header_albums_count">%1$d album • %2$s</string>
+    <string name="header_tracks_count">%1$d lagu • %2$s</string>
+    <string name="header_artists_count">%1$d artis • %2$s</string>
+    <string name="header_most_played_count">%1$d lagu sering diputar</string>
+    <string name="header_folders_count">%1$d folder • %2$s</string>
+
+    <!-- Library Onboarding -->
+    <string name="onboarding_select_folders_title">Pilih Folder Musik</string>
+    <string name="onboarding_select_folders_desc">Tentukan folder koleksi musik Anda (seperti Music) untuk pemindaian kilat ala Poweramp dan otomatis mengabaikan audio obrolan serta rekaman.</string>
+    <string name="onboarding_select_folders_btn">Pilih Folder Musik</string>
+
+    <!-- Scanning Progress & Tooltips -->
+    <string name="scan_syncing_library">Menyinkronkan pustaka musik…</string>
+    <string name="scan_reading_audio">Membaca berkas audio…</string>
+    <string name="scan_processing_cue">Memproses %1$d berkas CUE Sheet…</string>
+    <string name="scan_checking_files">Memeriksa berkas musik…</string>
+    <string name="scan_clearing_cache">Menghapus cache &amp; memindai ulang…</string>
+    <string name="rescan_library_tooltip">Pindai Ulang Pustaka</string>
+    <string name="list_options_tooltip">Opsi Tampilan</string>
+    <string name="folder_selection_tooltip">Pilihan Folder</string>
+
+    <!-- Detail Screens -->
+    <string name="album_detail_title">Album</string>
+    <string name="album_detail_meta">%1$d lagu • %2$s</string>
+    <string name="album_menu_tooltip">Menu Album</string>
+    <string name="back_to_albums">Kembali ke Album</string>
+    <string name="artist_detail_meta">%1$d album • %2$d lagu • %3$s</string>
+    <string name="play_all">Putar Semua</string>
+    <string name="shuffle_artist">Acak Artis</string>
+    <string name="play_all_count">Putar Semua (%1$d)</string>
+    <string name="shuffle_folder">Acak Folder</string>
+    <string name="folder_detail_meta">%1$d lagu • %2$s</string>
+    <string name="artist_item_meta">%1$d album • %2$d lagu</string>
+    <string name="folder_item_meta">%1$d lagu • %2$s</string>
+
+    <!-- Folder Selection Dialog -->
+    <string name="folder_selection_title">Pilihan Folder</string>
+    <string name="folder_selection_desc">Pilih folder yang memuat berkas musik Anda. Folder rekaman &amp; obrolan (WhatsApp/Telegram) otomatis diabaikan.</string>
+    <string name="folder_selection_empty_title">Belum ada folder khusus yang dipilih.</string>
+    <string name="folder_selection_empty_desc">Secara bawaan seluruh penyimpanan dipindai dengan mengecualikan audio obrolan dan rekaman. Ketuk tombol di bawah untuk membatasi pemindaian hanya ke folder musik Anda.</string>
+    <string name="folder_selection_pick_btn">Pilih Folder atau Penyimpanan</string>
+    <string name="folder_selection_min_error">Pilih minimal 1 folder musik yang aktif untuk memindai.</string>
+    <string name="folder_selection_save_btn">Simpan dan Pindai</string>
+    <string name="folder_selection_remove">Hapus</string>
+
+    <!-- List Options Dialog -->
+    <string name="list_options_dialog_title">Opsi Tampilan: %1$s</string>
+    <string name="list_options_sort_section">Urutkan</string>
+    <string name="list_options_reverse">Balik Urutan</string>
+    <string name="list_options_layout_section">Tata Letak</string>
+    <string name="list_options_layout_grid">Kisi</string>
+    <string name="list_options_layout_list">Daftar</string>
+    <string name="list_options_columns">Kolom: %1$d</string>
+
+    <!-- Sort Types -->
+    <string name="sort_by_name">Berdasarkan judul</string>
+    <string name="sort_by_artist">Berdasarkan artis</string>
+    <string name="sort_by_year">Berdasarkan tahun</string>
+    <string name="sort_by_date_added">Berdasarkan tanggal ditambahkan</string>
+    <string name="sort_by_track_count">Berdasarkan jumlah lagu</string>
+    <string name="sort_by_duration">Berdasarkan durasi</string>
+
+    <!-- Shuffle Options Dialog -->
+    <string name="shuffle_options_title">Opsi Acak</string>
+    <string name="shuffle_spread_label">Sebaran artis: %1$d%%</string>
+    <string name="shuffle_pure_random">Acak murni</string>
+    <string name="shuffle_even_spread">Sebar merata</string>
+    <string name="shuffle_spread_desc">Semakin ke kanan, lagu dari artis yang sama semakin jarang diputar berturutan.</string>
+
+    <!-- Sleep Timer Dialog -->
+    <string name="sleep_timer_title_remaining">Sleep Timer: %1$s lagi</string>
+    <string name="sleep_timer_title_min_remaining">Sleep Timer: %1$d mnt lagi</string>
+    <string name="sleep_timer_title_set">Atur Sleep Timer</string>
+    <string name="sleep_timer_minutes">%1$d menit</string>
+    <string name="sleep_timer_turn_off">Matikan Timer</string>
+
+    <!-- Search Dialog -->
+    <string name="search_placeholder">Cari judul, artis, album…</string>
+    <string name="search_results_count">%1$d hasil ditemukan</string>
+
+    <!-- Actions & Context Menus -->
+    <string name="action_play_next">Putar Selanjutnya</string>
+    <string name="action_add_to_queue">Tambah ke Antrean</string>
+    <string name="action_remove_from_queue">Hapus dari Antrean</string>
+    <string name="action_rescan">Pindai Ulang</string>
+    <string name="action_change_album_art">Ganti Album Art (Galeri)</string>
+    <string name="action_pick_album_art">Album Art (Pilih dari Galeri)</string>
+    <string name="action_remove_custom_art">Hapus Custom Art (Kembali ke Bawaan)</string>
+    <string name="action_open_album">Buka Album: %1$s</string>
+    <string name="action_open_artist">Buka Artis: %1$s</string>
+    <string name="action_info_tags">Info / Tag</string>
+    <string name="track_options_tooltip">Opsi lagu</string>
+    <string name="close_selection">Tutup Pilihan</string>
+
+    <!-- Info / Tags Dialog -->
+    <string name="tag_title">Judul</string>
+    <string name="tag_artist">Artis</string>
+    <string name="tag_album">Album</string>
+    <string name="tag_track">Track</string>
+    <string name="tag_year">Tahun</string>
+    <string name="tag_folder">Folder</string>
+
+    <!-- Now Playing -->
+    <string name="now_playing_no_track">Tidak ada lagu yang diputar</string>
+    <string name="now_playing_unknown_artist">Artis tidak diketahui</string>
+    <string name="now_playing_select_track">Pilih lagu untuk memutar</string>
+    <string name="cue_badge">CUE</string>
+
+    <!-- Most Played -->
+    <string name="most_played_empty_title">Belum Ada Riwayat Pemutaran</string>
+    <string name="most_played_empty_desc">Lagu yang diputar hingga melewati batas yang diatur (bawaan 50%%) akan otomatis tercatat dan muncul di tab ini.</string>
+    <string name="most_played_times">★ %1$dx</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Pengaturan</string>
+
+    <!-- Settings: Language -->
+    <string name="settings_section_language">Bahasa / Language</string>
+    <string name="settings_language_title">Bahasa Aplikasi</string>
+    <string name="settings_language_desc">Pilih bahasa tampilan aplikasi</string>
+    <string name="settings_language_system">Ikuti Sistem</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_id">Bahasa Indonesia</string>
+
+    <!-- Settings: Audio Engine -->
+    <string name="settings_section_audio">Audio Engine</string>
+    <string name="settings_gapless_title">Gapless Playback</string>
+    <string name="settings_gapless_desc">Transisi antar lagu tanpa jeda hening (seamless playback)</string>
+    <string name="settings_replaygain_title">Normalisasi Volume (ReplayGain)</string>
+    <string name="settings_replaygain_desc">Menyelaraskan kenyaringan audio secara otomatis (ReplayGain / R128)</string>
+    <string name="settings_pause_headset_title">Jeda saat Headset Lepas</string>
+    <string name="settings_pause_headset_desc">Otomatis pause musik saat earphone kabel atau Bluetooth terputus</string>
+    <string name="settings_audio_focus_title">Audio Focus Handling</string>
+    <string name="settings_audio_focus_desc">Otomatis kecilkan volume atau pause saat menerima telepon atau notifikasi</string>
+
+    <!-- Settings: Library & Cache -->
+    <string name="settings_section_library">Pustaka &amp; Database Cache</string>
+    <string name="settings_folders_title">Pilihan Folder</string>
+    <string name="settings_folders_default">Bawaan (seluruh folder musik, abaikan WhatsApp &amp; rekaman)</string>
+    <string name="settings_folders_active">%1$d folder aktif (%2$s)</string>
+    <string name="settings_db_title">Database Cache Lokal</string>
+    <string name="settings_db_tracks_cached">%1$d lagu tersimpan di cache lokal</string>
+    <string name="settings_btn_rescan">Pindai Ulang</string>
+    <string name="settings_btn_reset_cache">Reset Cache</string>
+
+    <!-- Settings: Smart Shuffle -->
+    <string name="settings_section_shuffle">Smart Shuffle</string>
+    <string name="settings_shuffle_spread_title">Sebaran Artis</string>
+    <string name="settings_shuffle_spread_pure">Acak murni (Fisher-Yates)</string>
+    <string name="settings_shuffle_spread_hint">Semakin tinggi, semakin kecil kemungkinan lagu dari artis yang sama muncul berturutan.</string>
+
+    <!-- Settings: Display & Album Art -->
+    <string name="settings_section_appearance">Tampilan &amp; Sampul Album</string>
+    <string name="settings_art_fit_title">Pertahankan Rasio Asli Cover Art (Fit)</string>
+    <string name="settings_art_fit_desc">Menampilkan gambar sampul sesuai proporsinya tanpa terpotong (ala Poweramp). Nonaktifkan untuk mengisi penuh kotak (Crop).</string>
+
+    <!-- Settings: Queue Behavior -->
+    <string name="settings_section_queue">Antrean &amp; Pemutaran</string>
+    <string name="settings_keep_queue_title">Lanjut Mainkan di Antrean yang Sama</string>
+    <string name="settings_keep_queue_desc">Memutar lagu dari daftar atau album langsung di dalam antrean aktif tanpa meresetnya (ala Poweramp).</string>
+
+    <!-- Settings: Playback Stats -->
+    <string name="settings_section_stats">Statistik Pemutaran (Sering Diputar)</string>
+    <string name="settings_threshold_title">Batas Hitung Lagu Diputar</string>
+    <string name="settings_threshold_desc">Lagu akan dihitung telah diputar (+1) dan masuk ke tab \'Sering Diputar\' setelah dimainkan minimal %1$d%% dari durasinya.</string>
+
+    <!-- Settings: About -->
+    <string name="settings_section_about">Tentang</string>
+    <string name="settings_about_app_name">Nitori Secret Lab Music Player</string>
+    <string name="settings_about_version">Versi 1.0.5 • Offline Hi-Fi Music Player</string>
+    <string name="settings_about_desc">Fokus pada reproduksi audio murni (uncolored playback), antrean Up Next yang fleksibel, dan performa cepat tanpa lag.</string>
+</resources>
+
