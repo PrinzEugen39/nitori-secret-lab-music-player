@@ -1,6 +1,7 @@
 package com.prinzeugen.nitorimusic.ui.library
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,11 +14,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.prinzeugen.nitorimusic.domain.model.Artist
+import com.prinzeugen.nitorimusic.ui.components.FastAlphabetScroller
+import kotlinx.coroutines.launch
 
 @Composable
 fun ArtistsTabContent(
@@ -25,36 +29,50 @@ fun ArtistsTabContent(
     onArtistClick: (Artist) -> Unit,
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 12.dp)
-    ) {
-        items(artists, key = { it.name }) { artist ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { onArtistClick(artist) }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        artist.name,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        "${artist.albumCount} album • ${artist.trackCount} lagu",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 12.dp)
+        ) {
+            items(artists, key = { it.name }) { artist ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onArtistClick(artist) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            artist.name,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            "${artist.albumCount} album • ${artist.trackCount} lagu",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+                HorizontalDivider()
             }
-            HorizontalDivider()
         }
+
+        FastAlphabetScroller(
+            items = artists,
+            itemTitle = { it.name },
+            onScrollToIndex = { targetIdx ->
+                scope.launch {
+                    listState.scrollToItem(targetIdx)
+                }
+            },
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
 }
 

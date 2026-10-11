@@ -4,7 +4,7 @@
 - **Android-only:** 100% native Kotlin dan Jetpack Compose modern.
 - **Single Source of Truth untuk Playback & Queue:** State pemutaran dan antrean sepenuhnya dimiliki oleh `PlaybackService` (`MediaSessionService`). UI hanya mengamati melalui `StateFlow` unidirectional data flow.
 - **Offline-First Room DB Caching:** Seluruh metadata library dan antrean tersimpan di database lokal (Room SQLite). Startup instan 0ms saat aplikasi dibuka tanpa menunggu scanner sistem.
-- **Bit-Perfect Audio Philosophy:** Tidak ada equalizer bawaan untuk menjaga integritas dan kemurnian sinyal audio asli.
+- **Bit-Perfect Audio Philosophy & ReplayGain:** Tidak ada equalizer bawaan untuk menjaga integritas dan kemurnian sinyal audio asli; normalisasi kenyaringan volume otomatis membaca tag ReplayGain/R128.
 - **Preservasi State:** Menggunakan `SaveableStateHolder` di tingkat root layar, tingkat detail view, dan tingkat tab untuk menjaga posisi scroll pengguna.
 
 ---
@@ -56,33 +56,34 @@ app/src/main/java/com/prinzeugen/nitorimusic/
 │   └── shuffle/
 │       └── SmartShuffle.kt         # Algoritma penyebaran artis/album
 ├── playback/
-│   ├── PlaybackService.kt          # Foreground MediaSessionService
+│   ├── PlaybackService.kt          # Foreground MediaSessionService + ReplayGain
 │   └── PlaybackController.kt       # Wrapper MediaController, AudioSpecs, SleepTimer
 └── ui/
     ├── AppRoot.kt                  # Navigasi utama & Screen SaveableStateHolder
     ├── MainViewModel.kt            # ViewModel induk pengelola state
     ├── TimeFormat.kt               # Helper format durasi mm:ss
     ├── components/
+    │   ├── FastAlphabetScroller.kt # Fast A-Z Indexer scroller bar & bubble
     │   ├── ArtworkImage.kt         # Image Composable multi-fallback
     │   ├── PowerampBottomBar.kt    # Bottom bar permanent 3-row
     │   └── TrackActionMenu.kt      # Menu opsi cepat per lagu
     ├── library/
     │   ├── LibraryScreen.kt        # Tab row, toolbar, SaveableStateHolder tabs
-    │   ├── AlbumsTabContent.kt     # Grid/List album + Bulk Selection
+    │   ├── AlbumsTabContent.kt     # Grid/List album + Bulk Selection + A-Z Scroller
     │   ├── AlbumActionDialog.kt    # Dialog context detail album
-    │   ├── TracksTabContent.kt     # Grid/List lagu + Bulk Selection
-    │   ├── ArtistsTabContent.kt    # Daftar artis
+    │   ├── TracksTabContent.kt     # Grid/List lagu + Bulk Selection + A-Z Scroller
+    │   ├── ArtistsTabContent.kt    # Daftar artis + A-Z Scroller
     │   ├── FoldersTabContent.kt    # Daftar folder
     │   ├── AlbumDetailScreen.kt    # Detail isi album
     │   ├── ArtistDetailScreen.kt   # Detail isi artis
     │   ├── FolderDetailScreen.kt   # Detail isi folder
     │   └── SearchDialog.kt         # Pencarian lagu cepat
     ├── nowplaying/
-    │   ├── NowPlayingScreen.kt     # Player view, Palette ambient, Sleep countdown
+    │   ├── NowPlayingScreen.kt     # Player view, Palette ambient, Gesture swipe-down
     │   ├── QueueScreen.kt          # Reorderable queue drag-drop
     │   └── SleepTimerDialog.kt     # Dialog pilihan timer tidur
     └── settings/
-        └── SettingsScreen.kt       # Layar konfigurasi audio & library
+        └── SettingsScreen.kt       # Layar konfigurasi audio (ReplayGain) & library
 ```
 
 ---

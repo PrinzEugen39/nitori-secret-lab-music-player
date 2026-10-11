@@ -10,10 +10,11 @@ Target platform: Android 10+ (Dioptimasi untuk Android 14/15, API 34-35).
 
 ### 1. Audio Engine & Playback
 - **Media3 ExoPlayer & MediaSessionService:** Background playback tahan gangguan dengan persistent system media notification dan lockscreen controls.
+- **Normalisasi Volume Otomatis (ReplayGain / R128):** Membaca metadata ReplayGain dari tag FLAC/OGG Vorbis, ID3v2, dan MP4 untuk menyeimbangkan kenyaringan suara secara otomatis (`10^(gainDb / 20)`) tanpa pewarnaan EQ bawaan.
 - **Audio Focus & Headset Management:** Auto-pause saat headset/TWS dilepas, audio ducking saat notifikasi masuk.
 - **Bit-Perfect Focus:** Tanpa equalizer bawaan untuk output audio yang murni, natural, dan jernih.
 - **Gapless Playback:** Transisi tanpa jeda untuk file FLAC, ALAC, WAV, MP3.
-- **Live Audio Specs Badge:** Deteksi dan tampilan real-time codec, sample rate, bit depth, dan bitrate (misal: `FLAC • 24-bit • 44.1 kHz`, `MP3 • 320 kbps`) di layar Now Playing.
+- **Live Audio Specs Badge (Audiophile):** Deteksi dan tampilan real-time codec, sample rate, bit depth, dan bitrate (misal: `FLAC • 24-bit • 44.1 kHz`, `MP3 • 320 kbps`) di bagian paling bawah layar Now Playing.
 - **Sleep Timer dengan Live Countdown & Volume Fade-Out:** Pilihan durasi 15–90 menit dengan badge live countdown `⏳ mm:ss` dan fade-out volume perlahan 15 detik terakhir sebelum jeda.
 
 ### 2. Antrean "Up Next" & Smart Shuffle
@@ -25,6 +26,7 @@ Target platform: Android 10+ (Dioptimasi untuk Android 14/15, API 34-35).
 - **Room DB Metadata Cache:** Membuka aplikasi terasa instan (0ms) dari cache Room DB, dengan background sync ke MediaStore.
 - **Browse Lengkap:** Tab Albums, Tracks, Artists, dan Folders dengan layout Grid/List dinamis serta pengaturan sorting.
 - **Preservasi Posisi Scroll:** Navigasi antar halaman (ke Now Playing, Queue, Settings) atau membuka detail album/artis tidak akan mereset posisi scroll daftar ke atas (menggunakan `SaveableStateHolder`).
+- **Fast Alphabet Scroller (A–Z Indexer):** Bar alfabet vertikal di tepi kanan layar pada tab Tracks, Albums, dan Artists dengan deteksi drag dan floating letter preview bubble untuk lompat cepat ke huruf target.
 
 ### 4. Metadata & Custom Album Art
 - **Multi-Tier Artwork Resolver:**
@@ -37,14 +39,15 @@ Target platform: Android 10+ (Dioptimasi untuk Android 14/15, API 34-35).
 - **Pilih Gambar Sendiri:** Opsi mengganti cover album langsung dari galeri perangkat.
 
 ### 5. UI/UX ala Poweramp
+- **Poweramp Vertical Downward Swipe Gesture:** Cukup usap ke bawah (*swipe down*) pada cover album art di Now Playing untuk kembali ke Library.
 - **Album & Track Bulk Selection Mode:** Long-press pada item album atau lagu untuk masuk ke mode multi-pilih dengan checkbox overlay, tombol All, counter, tombol Queue, Play Next, dan opsi ganti cover (khusus saat 1 album dipilih).
 - **Album Context Dialog:** Menampilkan thumbnail, durasi total, jumlah lagu, tahun, Play Next, Queue, Rescan, dan picker Album Art.
 - **Dynamic Material You Palette:** Latar belakang layar Now Playing mengalirkan gradasi ambient halus yang beradaptasi secara otomatis dengan warna dominan cover album yang sedang diputar.
-- **Swipe Gesture Playback:** Transisi geser HorizontalPager antar artwork lagu dengan animasi physics spring snapping.
+- **Horizontal Cover Carousel:** Transisi geser HorizontalPager antar artwork lagu dengan animasi physics spring snapping.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Build Optimization
 
 | Lapisan | Pustaka / Komponen |
 |---|---|
@@ -55,6 +58,7 @@ Target platform: Android 10+ (Dioptimasi untuk Android 14/15, API 34-35).
 | **Image & Color** | Coil Compose 2.7.0, AndroidX Palette 1.0.0, Custom LruCache |
 | **Reorder & Animasi**| Reorderable 2.4.0, Compose Animation Physics |
 | **Settings / Prefs** | AndroidX DataStore Preferences 1.1.1 |
+| **Optimasi Build** | R8 Code Shrinking + ProGuard Rules + Resource Shrinking (**4.04 MB** release APK) |
 
 ---
 
@@ -73,15 +77,15 @@ app/src/main/java/com/prinzeugen/nitorimusic/
 │   ├── model/              # Domain models (Track, Album, Artist, Folder, Layout)
 │   └── shuffle/            # SmartShuffle & PureShuffle engine
 ├── playback/
-│   ├── PlaybackService.kt  # MediaSessionService (Foreground audio service)
+│   ├── PlaybackService.kt  # MediaSessionService (Foreground audio service + ReplayGain)
 │   └── PlaybackController.kt # Wrapper MediaController + AudioSpecs + SleepTimer
 └── ui/
     ├── AppRoot.kt          # Root navigation container & State preservation
     ├── MainViewModel.kt    # State management UI
-    ├── components/         # ArtworkImage, PowerampBottomBar, TrackActionMenu
+    ├── components/         # FastAlphabetScroller, ArtworkImage, PowerampBottomBar
     ├── library/            # LibraryScreen, Albums/Tracks/Artists/Folders tabs & Dialogs
     ├── nowplaying/         # NowPlayingScreen, QueueScreen, SleepTimerDialog
-    └── settings/           # SettingsScreen (Gapless, Focus, Shuffle, Cache)
+    └── settings/           # SettingsScreen (ReplayGain, Gapless, Focus, Shuffle, Cache)
 ```
 
 ---

@@ -53,6 +53,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val gaplessEnabled: StateFlow<Boolean> = settings.gaplessEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    val replayGainEnabled: StateFlow<Boolean> = settings.replayGainEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 
@@ -151,6 +154,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setGaplessEnabled(enabled: Boolean) {
         viewModelScope.launch { settings.setGaplessEnabled(enabled) }
+    }
+
+    fun setReplayGainEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setReplayGainEnabled(enabled) }
     }
 
     fun setAlbumsOptions(options: ListOptions) {

@@ -22,6 +22,7 @@ data class QueueItem(
     val mediaId: String,
     val title: String,
     val artist: String,
+    val album: String = "",
 ) {
     val trackId: Long? get() = mediaId.toLongOrNull()
 }
@@ -53,6 +54,7 @@ data class PlaybackUiState(
     val currentMediaId: String? = null,
     val title: String = "",
     val artist: String = "",
+    val album: String = "",
     val isPlaying: Boolean = false,
     val queue: List<QueueItem> = emptyList(),
     val currentIndex: Int = -1,
@@ -241,6 +243,7 @@ class PlaybackController(private val context: Context) {
                 mediaId = m.mediaId,
                 title = m.mediaMetadata.title?.toString().orEmpty(),
                 artist = m.mediaMetadata.artist?.toString().orEmpty(),
+                album = m.mediaMetadata.albumTitle?.toString().orEmpty(),
             )
         }
         val specs = extractAudioSpecs(player)
@@ -248,6 +251,7 @@ class PlaybackController(private val context: Context) {
             currentMediaId = item?.mediaId,
             title = item?.mediaMetadata?.title?.toString().orEmpty(),
             artist = item?.mediaMetadata?.artist?.toString().orEmpty(),
+            album = item?.mediaMetadata?.albumTitle?.toString().orEmpty(),
             isPlaying = player.isPlaying,
             queue = queue,
             currentIndex = if (item == null) -1 else player.currentMediaItemIndex,

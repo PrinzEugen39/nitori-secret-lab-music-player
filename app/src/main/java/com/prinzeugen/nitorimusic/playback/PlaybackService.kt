@@ -7,6 +7,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Metadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.pow
 
 /**
  * Pemilik tunggal player dan queue. UI terhubung lewat MediaController.
@@ -35,6 +37,7 @@ import kotlinx.coroutines.withContext
  * 1. Audio Focus & Audio Becoming Noisy (jeda saat headset/bluetooth dicabut atau ada panggilan).
  * 2. Persistensi Queue ke Room Database (restore saat service restart).
  * 3. Persistensi Posisi Playback & Track terakhir ke DataStore.
+ * 4. Normalisasi Volume Otomatis (ReplayGain / R128).
  */
 class PlaybackService : MediaSessionService() {
 
@@ -42,6 +45,7 @@ class PlaybackService : MediaSessionService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private var isRestoring = false
+    private var isReplayGainEnabled = true
     private var saveQueueJob: Job? = null
     private var positionTickerJob: Job? = null
 
@@ -73,6 +77,17 @@ class PlaybackService : MediaSessionService() {
                 if (!isRestoring) {
                     savePlaybackPosition(positionOverride = 0L)
                 }
+                if (!isReplayGainEnabled) {
+                    player.volume = 1f
+                }
+            }
+
+            override fun onMetadata(metadata: Metadata) {
+                if (isReplayGainEnabled) {
+                    applyReplayGain(player, metadata)
+                } else {
+                    player.volume = 1f
+                }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -91,8 +106,41 @@ class PlaybackService : MediaSessionService() {
             }
         })
 
+        observeSettings(player)
         startPositionTicker(player)
         restoreQueueAndPlayback(player)
+    }
+
+    private fun observeSettings(player: ExoPlayer) {
+        val settings = SettingsStore(applicationContext)
+        serviceScope.launch {
+            settings.replayGainEnabled.collect { enabled ->
+                isReplayGainEnabled = enabled
+                withContext(Dispatchers.Main) {
+                    if (!enabled) {
+                        player.volume = 1f
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applyReplayGain(player: ExoPlayer, metadata: Metadata) {
+        val regex = Regex("""([+-]?\d+(?:\.\d+)?)\s*dB""", RegexOption.IGNORE_CASE)
+        for (i in 0 until metadata.length()) {
+            val entryStr = metadata.get(i).toString()
+            if (entryStr.contains("REPLAYGAIN_TRACK_GAIN", ignoreCase = true) ||
+                entryStr.contains("R128_TRACK_GAIN", ignoreCase = true)
+            ) {
+                val match = regex.find(entryStr)
+                val gainDb = match?.groupValues?.getOrNull(1)?.toFloatOrNull()
+                if (gainDb != null) {
+                    val targetVol = (10.0.pow(gainDb / 20.0)).toFloat().coerceIn(0.15f, 1.25f)
+                    player.volume = targetVol
+                    return
+                }
+            }
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =

@@ -50,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +64,8 @@ import com.prinzeugen.nitorimusic.domain.model.Album
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
+import com.prinzeugen.nitorimusic.ui.components.FastAlphabetScroller
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -115,6 +118,7 @@ fun AlbumsTabContent(
 
     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
         if (layout == ViewLayout.GRID) {
@@ -339,6 +343,23 @@ fun AlbumsTabContent(
                         )
                     }
                 }
+            }
+
+            if (!isSelectionMode) {
+                FastAlphabetScroller(
+                    items = albums,
+                    itemTitle = { it.title },
+                    onScrollToIndex = { targetIdx ->
+                        scope.launch {
+                            if (layout == ViewLayout.GRID) {
+                                gridState.scrollToItem(targetIdx)
+                            } else {
+                                listState.scrollToItem(targetIdx)
+                            }
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                )
             }
         }
     }

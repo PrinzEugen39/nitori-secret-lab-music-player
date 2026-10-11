@@ -58,6 +58,7 @@ fun SettingsScreen(
     val audioFocus by viewModel.audioFocusEnabled.collectAsState()
     val pauseOnHeadset by viewModel.pauseOnHeadsetDisconnect.collectAsState()
     val gapless by viewModel.gaplessEnabled.collectAsState()
+    val replayGain by viewModel.replayGainEnabled.collectAsState()
     val spread by viewModel.shuffleSpread.collectAsState()
 
     val scrollState = rememberScrollState()
@@ -101,6 +102,13 @@ fun SettingsScreen(
                 subtitle = "Transisi antar lagu tanpa celah hening (seamless playback)",
                 checked = gapless,
                 onCheckedChange = viewModel::setGaplessEnabled
+            )
+
+            SettingSwitchRow(
+                title = "Normalisasi Volume (ReplayGain)",
+                subtitle = "Menyelaraskan kenyaringan audio secara otomatis (ReplayGain / R128)",
+                checked = replayGain,
+                onCheckedChange = viewModel::setReplayGainEnabled
             )
 
             SettingSwitchRow(

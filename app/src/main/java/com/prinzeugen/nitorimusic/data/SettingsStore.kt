@@ -36,6 +36,14 @@ class SettingsStore(private val context: Context) {
     private val audioFocusKey = booleanPreferencesKey("audio_focus_enabled")
     private val pauseOnHeadsetDisconnectKey = booleanPreferencesKey("pause_on_headset_disconnect")
     private val gaplessEnabledKey = booleanPreferencesKey("gapless_enabled")
+    private val replayGainEnabledKey = booleanPreferencesKey("replay_gain_enabled")
+
+    val replayGainEnabled: Flow<Boolean> =
+        context.dataStore.data.map { it[replayGainEnabledKey] ?: true }
+
+    suspend fun setReplayGainEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[replayGainEnabledKey] = enabled }
+    }
 
     val audioFocusEnabled: Flow<Boolean> =
         context.dataStore.data.map { it[audioFocusKey] ?: true }

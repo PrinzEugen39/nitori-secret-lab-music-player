@@ -4,7 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
@@ -53,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -168,22 +167,20 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Top Bar: Back, Sleep Timer Badge (jika aktif), Queue
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                }
+            val density = LocalDensity.current
+            val swipeDownThreshold = with(density) { 60.dp.toPx() }
+            var dragOffsetY by remember { mutableFloatStateOf(0f) }
 
-                // Sleep Timer Live Countdown Badge
-                if (state.sleepTimerSecondsLeft > 0) {
-                    val min = state.sleepTimerSecondsLeft / 60
-                    val sec = state.sleepTimerSecondsLeft % 60
+            // Top Area: Sleep Timer Live Countdown Badge (jika aktif), tanpa tombol back & queue
+            if (state.sleepTimerSecondsLeft > 0) {
+                val min = state.sleepTimerSecondsLeft / 60
+                val sec = state.sleepTimerSecondsLeft % 60
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primaryContainer,
@@ -202,47 +199,61 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                             )
                         }
                     }
-                } else {
-                    Spacer(Modifier.width(1.dp))
                 }
-
-                IconButton(onClick = onOpenQueue) {
-                    Icon(Icons.AutoMirrored.Rounded.QueueMusic, contentDescription = "Queue")
-                }
+            } else {
+                Spacer(Modifier.height(16.dp))
             }
 
             Spacer(Modifier.height(4.dp))
 
-            // Large Album Artwork Carousel (Dukungan Animasi Swipe Geser Kiri / Kanan)
-            if (queue.isNotEmpty()) {
-                androidx.compose.foundation.pager.HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                    pageSpacing = 16.dp,
-                ) { page ->
-                    val item = queue.getOrNull(page)
+            // Large Album Artwork Carousel dengan gesture swipe kebawah untuk kembali (ala Poweramp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragStart = { dragOffsetY = 0f },
+                            onDragEnd = { dragOffsetY = 0f },
+                            onDragCancel = { dragOffsetY = 0f }
+                        ) { _, dragAmount ->
+                            if (dragAmount > 0 || dragOffsetY > 0) {
+                                dragOffsetY += dragAmount
+                                if (dragOffsetY > swipeDownThreshold) {
+                                    dragOffsetY = 0f
+                                    onBack()
+                                }
+                            }
+                        }
+                    }
+            ) {
+                if (queue.isNotEmpty()) {
+                    androidx.compose.foundation.pager.HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        pageSpacing = 16.dp,
+                    ) { page ->
+                        val item = queue.getOrNull(page)
+                        ArtworkImage(
+                            trackId = item?.trackId,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(16.dp)),
+                        )
+                    }
+                } else {
                     ArtworkImage(
-                        trackId = item?.trackId,
+                        trackId = trackId,
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(16.dp)),
                     )
                 }
-            } else {
-                ArtworkImage(
-                    trackId = trackId,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp)),
-                )
             }
 
             Spacer(Modifier.height(10.dp))
 
-            // Title & Artist
+            // Title, Artist & Album
             Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -264,6 +275,16 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (state.album.isNotEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = state.album,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             Spacer(Modifier.height(6.dp))
@@ -380,9 +401,9 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.weight(1f))
 
-            // Audio Specs Badge ditaruh di tengah paling bawah (khas Audiophile)
+            // Audio Specs Badge ditaruh benar-benar di paling bawah (khas Audiophile)
             state.audioSpecs?.let { specs ->
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -400,7 +421,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(14.dp))
         }
     }
 }
