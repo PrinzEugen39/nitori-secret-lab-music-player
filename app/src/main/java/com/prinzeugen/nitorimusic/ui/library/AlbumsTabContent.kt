@@ -113,9 +113,13 @@ fun AlbumsTabContent(
         )
     }
 
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
     Box(Modifier.fillMaxSize()) {
         if (layout == ViewLayout.GRID) {
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Fixed(gridColumns.coerceIn(2, 5)),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -162,6 +166,7 @@ fun AlbumsTabContent(
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     bottom = if (isSelectionMode) 100.dp else 12.dp
@@ -375,6 +380,7 @@ private fun AlbumGridItem(
             if (isSelectionMode) {
                 Box(
                     modifier = Modifier
+                        .align(Alignment.TopStart)
                         .padding(6.dp)
                         .size(24.dp)
                         .clip(RoundedCornerShape(6.dp))
@@ -395,44 +401,43 @@ private fun AlbumGridItem(
                         )
                     }
                 }
-            }
-        }
-
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    album.title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    album.artist,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (!isSelectionMode) {
-                IconButton(
-                    onClick = onMoreClick,
-                    modifier = Modifier.size(28.dp)
+            } else {
+                // Tombol konteks menu "⋮" dibuat absolute di pojok kanan atas album (snug container)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(5.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0x77000000))
+                        .clickable(onClick = onMoreClick)
+                        .padding(horizontal = 3.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.MoreVert,
                         contentDescription = "Album Menu",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
         }
+
+        // Judul & Artis full width tanpa terpotong icon button
+        Text(
+            album.title,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        Text(
+            album.artist,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

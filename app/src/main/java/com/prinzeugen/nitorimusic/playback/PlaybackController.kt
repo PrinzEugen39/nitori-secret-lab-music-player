@@ -59,6 +59,7 @@ data class PlaybackUiState(
     val durationMs: Long = 0L,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
     val sleepTimerMinutesLeft: Int = 0,
+    val sleepTimerSecondsLeft: Int = 0,
     val audioSpecs: AudioSpecs? = null,
 )
 
@@ -191,20 +192,38 @@ class PlaybackController(private val context: Context) {
     fun setSleepTimer(minutes: Int) {
         cancelSleepTimer()
         if (minutes <= 0) return
+        val totalSeconds = minutes * 60
         sleepJob = scope.launch {
-            for (m in minutes downTo 1) {
-                _state.value = _state.value.copy(sleepTimerMinutesLeft = m)
-                kotlinx.coroutines.delay(60_000L)
+            for (sec in totalSeconds downTo 1) {
+                val m = (sec + 59) / 60
+                _state.value = _state.value.copy(
+                    sleepTimerMinutesLeft = m,
+                    sleepTimerSecondsLeft = sec
+                )
+                // Fade-out halus 15 detik terakhir sebelum timer habis
+                if (sec <= 15) {
+                    val fadeVol = (sec.toFloat() / 15f).coerceIn(0f, 1f)
+                    controller?.volume = fadeVol
+                }
+                kotlinx.coroutines.delay(1000L)
             }
-            _state.value = _state.value.copy(sleepTimerMinutesLeft = 0)
+            _state.value = _state.value.copy(
+                sleepTimerMinutesLeft = 0,
+                sleepTimerSecondsLeft = 0
+            )
             controller?.pause()
+            controller?.volume = 1f
         }
     }
 
     fun cancelSleepTimer() {
         sleepJob?.cancel()
         sleepJob = null
-        _state.value = _state.value.copy(sleepTimerMinutesLeft = 0)
+        controller?.volume = 1f
+        _state.value = _state.value.copy(
+            sleepTimerMinutesLeft = 0,
+            sleepTimerSecondsLeft = 0
+        )
     }
 
     fun release() {
@@ -235,6 +254,7 @@ class PlaybackController(private val context: Context) {
             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
             repeatMode = player.repeatMode,
             sleepTimerMinutesLeft = _state.value.sleepTimerMinutesLeft,
+            sleepTimerSecondsLeft = _state.value.sleepTimerSecondsLeft,
             audioSpecs = specs,
         )
     }

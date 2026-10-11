@@ -17,18 +17,28 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SleepTimerDialog(
     currentMinutesLeft: Int,
+    currentSecondsLeft: Int = 0,
     onSetTimer: (Int) -> Unit,
     onCancelTimer: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val options = listOf(15, 30, 45, 60, 90)
 
+    val titleText = if (currentSecondsLeft > 0) {
+        val min = currentSecondsLeft / 60
+        val sec = currentSecondsLeft % 60
+        "Sleep Timer: %02d:%02d lagi".format(min, sec)
+    } else if (currentMinutesLeft > 0) {
+        "Sleep Timer: $currentMinutesLeft mnt lagi"
+    } else {
+        "Set Sleep Timer"
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (currentMinutesLeft > 0) "Sleep Timer: $currentMinutesLeft mnt lagi"
-                else "Set Sleep Timer",
+                text = titleText,
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -49,7 +59,7 @@ fun SleepTimerDialog(
                     }
                 }
 
-                if (currentMinutesLeft > 0) {
+                if (currentMinutesLeft > 0 || currentSecondsLeft > 0) {
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -74,4 +84,3 @@ fun SleepTimerDialog(
         }
     )
 }
-

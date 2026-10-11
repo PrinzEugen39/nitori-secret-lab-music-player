@@ -1,123 +1,105 @@
 # Architecture & Project Structure
 
-## 1. Prinsip
-- Android-only, Kotlin, Jetpack Compose.
-- **Satu sumber kebenaran untuk queue:** state queue dimiliki player service, bukan UI.
-- UI hanya mengamati state (`StateFlow`) dan mengirim aksi, mirip pola React.
-- Pola: MVVM + Repository, dengan unidirectional data flow.
+## 1. Prinsip Arsitektur
+- **Android-only:** 100% native Kotlin dan Jetpack Compose modern.
+- **Single Source of Truth untuk Playback & Queue:** State pemutaran dan antrean sepenuhnya dimiliki oleh `PlaybackService` (`MediaSessionService`). UI hanya mengamati melalui `StateFlow` unidirectional data flow.
+- **Offline-First Room DB Caching:** Seluruh metadata library dan antrean tersimpan di database lokal (Room SQLite). Startup instan 0ms saat aplikasi dibuka tanpa menunggu scanner sistem.
+- **Bit-Perfect Audio Philosophy:** Tidak ada equalizer bawaan untuk menjaga integritas dan kemurnian sinyal audio asli.
+- **Preservasi State:** Menggunakan `SaveableStateHolder` di tingkat root layar, tingkat detail view, dan tingkat tab untuk menjaga posisi scroll pengguna.
 
-## 2. Diagram Lapisan
+---
+
+## 2. Diagram Alur Data
 
 ```mermaid
 flowchart TD
-    UI["UI (Compose screens)"] --> VM["ViewModels"]
-    VM --> Repo["Repositories"]
-    VM --> Ctrl["PlaybackController (MediaController)"]
-    Ctrl --> Svc["PlaybackService (MediaSessionService)"]
-    Svc --> Player["ExoPlayer"]
-    Svc --> QM["QueueManager + ShuffleEngine"]
-    Repo --> DB[("Room DB")]
-    Repo --> Scan["LibraryScanner (MediaStore / SAF)"]
-    QM --> DB
+    UI["UI (Compose Screens & Tabs)"] -->|User Action| VM["MainViewModel"]
+    VM -->|Fetch Cached Data| Repo["LibraryRepository"]
+    VM -->|Control Commands| Ctrl["PlaybackController (MediaController)"]
+    Ctrl -->|IPC Session Token| Svc["PlaybackService (MediaSessionService)"]
+    Svc -->|Audio Engine| Player["ExoPlayer"]
+    Svc -->|Persist Queue| QDao["QueueDao (Room DB)"]
+    Repo -->|Cache First 0ms| TDao["TrackDao (Room DB)"]
+    Repo -->|Background Sync| Scanner["MediaStore / Storage"]
+    Scanner --> MMR["MediaMetadataRetriever (Native Tags)"]
+    MMR --> Repo
+    Art["ArtworkLoader & CustomArtStore"] -->|Memory Cache| Lru["ArtworkMemoryCache (RGB_565)"]
+    Art -->|Extract Fallback| MMR
+    UI --> Art
 ```
 
-## 3. Modul / Package
+---
 
-Mulai dengan satu module `app`, dipisah per package. Pecah ke multi-module hanya jika perlu.
+## 3. Struktur Modul & Package
 
 ```
-app/src/main/java/com/yourname/musicplayer/
-├── MusicApp.kt                  # Application class (Hilt)
-├── MainActivity.kt
+app/src/main/java/com/prinzeugen/nitorimusic/
 ├── data/
 │   ├── db/
-│   │   ├── AppDatabase.kt
-│   │   ├── dao/                 # TrackDao, AlbumDao, PlaylistDao, QueueDao
-│   │   └── entity/              # TrackEntity, PlaylistEntity, QueueItemEntity
-│   ├── scanner/LibraryScanner.kt
-│   ├── repository/              # LibraryRepository, PlaylistRepository
-│   └── prefs/SettingsStore.kt   # DataStore
+│   │   ├── AppDatabase.kt          # Database Room v2 (Queue & Tracks)
+│   │   ├── dao/
+│   │   │   ├── TrackDao.kt         # Operasi CRUD cache metadata
+│   │   │   └── QueueDao.kt         # Operasi persistensi antrean
+│   │   └── entity/
+│   │       ├── TrackEntity.kt      # Tabel cache lagu & album
+│   │       └── SavedQueueItem.kt   # Tabel urutan antrean aktif
+│   ├── cue/
+│   │   └── CueSheetParser.kt       # Parser CUE sheet (eksperimental)
+│   ├── ArtworkLoader.kt            # Multi-tier fallback cover art
+│   ├── CustomArtworkManager.kt     # Manajemen custom art & LruCache
+│   ├── LibraryRepository.kt        # Repository offline-first
+│   └── SettingsStore.kt            # DataStore preferensi audio & UI
 ├── domain/
-│   ├── model/                   # Track, Album, Artist, QueueState
+│   ├── model/
+│   │   ├── Track.kt, Album, Artist, Folder
+│   │   └── LibrarySort.kt, ViewLayout, ListOptions
 │   └── shuffle/
-│       ├── ShuffleEngine.kt     # interface
-│       ├── PureShuffle.kt
-│       └── SmartShuffle.kt      # hindari artis/album berturutan
+│       └── SmartShuffle.kt         # Algoritma penyebaran artis/album
 ├── playback/
-│   ├── PlaybackService.kt       # MediaSessionService
-│   ├── PlaybackController.kt    # wrapper MediaController untuk UI
-│   ├── QueueManager.kt          # reorder, remove, jump-to
-│   └── SleepTimer.kt
-├── ui/
-│   ├── theme/
-│   ├── navigation/
-│   ├── library/                 # Albums, Artists, Folders, Tracks
-│   ├── nowplaying/              # NowPlayingScreen + QueueSheet
-│   ├── playlist/
-│   └── components/              # TrackRow, MiniPlayer, DragHandle
-└── di/                          # Hilt modules
+│   ├── PlaybackService.kt          # Foreground MediaSessionService
+│   └── PlaybackController.kt       # Wrapper MediaController, AudioSpecs, SleepTimer
+└── ui/
+    ├── AppRoot.kt                  # Navigasi utama & Screen SaveableStateHolder
+    ├── MainViewModel.kt            # ViewModel induk pengelola state
+    ├── TimeFormat.kt               # Helper format durasi mm:ss
+    ├── components/
+    │   ├── ArtworkImage.kt         # Image Composable multi-fallback
+    │   ├── PowerampBottomBar.kt    # Bottom bar permanent 3-row
+    │   └── TrackActionMenu.kt      # Menu opsi cepat per lagu
+    ├── library/
+    │   ├── LibraryScreen.kt        # Tab row, toolbar, SaveableStateHolder tabs
+    │   ├── AlbumsTabContent.kt     # Grid/List album + Bulk Selection
+    │   ├── AlbumActionDialog.kt    # Dialog context detail album
+    │   ├── TracksTabContent.kt     # Grid/List lagu + Bulk Selection
+    │   ├── ArtistsTabContent.kt    # Daftar artis
+    │   ├── FoldersTabContent.kt    # Daftar folder
+    │   ├── AlbumDetailScreen.kt    # Detail isi album
+    │   ├── ArtistDetailScreen.kt   # Detail isi artis
+    │   ├── FolderDetailScreen.kt   # Detail isi folder
+    │   └── SearchDialog.kt         # Pencarian lagu cepat
+    ├── nowplaying/
+    │   ├── NowPlayingScreen.kt     # Player view, Palette ambient, Sleep countdown
+    │   ├── QueueScreen.kt          # Reorderable queue drag-drop
+    │   └── SleepTimerDialog.kt     # Dialog pilihan timer tidur
+    └── settings/
+        └── SettingsScreen.kt       # Layar konfigurasi audio & library
 ```
 
-## 4. Data Model
+---
 
-| Entity | Field utama |
-|---|---|
-| `TrackEntity` | id, uri, title, artist, album, albumArtist, trackNo, discNo, durationMs, format, sampleRate, bitrate, folderPath, dateAdded |
-| `PlaylistEntity` | id, name |
-| `PlaylistTrackCrossRef` | playlistId, trackId, position |
-| `QueueItemEntity` | position, trackId, queueItemUid |
+## 4. Model Data Utama
 
-Queue disimpan ke DB agar bertahan setelah app dimatikan. Beri `queueItemUid` unik agar lagu yang sama boleh muncul dua kali.
+| Model / Entity | Field Kunci | Keterangan |
+|---|---|---|
+| `TrackEntity` | `id`, `uri`, `title`, `artist`, `album`, `albumId`, `durationMs`, `trackNo`, `year`, `dateAddedSec`, `folderPath` | Menyimpan cache offline library |
+| `SavedQueueItem` | `position`, `mediaId`, `title`, `artist` | Menyimpan antrean aktif secara persisten |
+| `AudioSpecs` | `codec`, `sampleRateHz`, `bitDepth`, `bitrateKbps`, `channelCount` | Spesifikasi decoding real-time audio |
+| `Album` | `id`, `title`, `artist`, `year`, `trackCount`, `coverTrackId` | Agregasi album turunan dari Track |
 
-## 5. Queue & Shuffle (inti app)
+---
 
-**Alur saat shuffle dinyalakan**
-1. Ambil sumber (album, folder, atau seluruh library).
-2. `ShuffleEngine.shuffle(tracks, currentTrack)` menghasilkan urutan fix.
-3. Lagu yang sedang diputar ditaruh di posisi 0.
-4. Urutan dimasukkan ke playlist ExoPlayer dan disimpan ke tabel queue.
-
-**Operasi queue** (via `QueueManager`, memanggil `Player.moveMediaItem`, `removeMediaItem`, `seekTo`)
-- Reorder lewat drag.
-- Remove lewat swipe.
-- Tap untuk lompat ke lagu.
-- "Play next" dan "Add to queue".
-
-**Smart shuffle:** untuk setiap slot, pilih kandidat acak. Jika artis atau album sama dengan lagu sebelumnya, ambil ulang sampai N kali. Slider "randomness" mengatur kekuatan penghindaran.
-
-## 6. Playback Service
-- `PlaybackService : MediaSessionService` berjalan sebagai foreground service dengan notifikasi media.
-- UI terhubung lewat `MediaController`, jadi playback tetap hidup saat Activity ditutup.
-- Gapless: ExoPlayer menanganinya untuk FLAC. Uji dengan album gapless.
-- Sleep timer: coroutine dengan delay lalu `pause()`, opsi "selesai di akhir lagu".
-
-## 7. Scanning Library
-- Pakai `MediaStore.Audio` untuk indeks cepat.
-- Metadata tambahan (disc number, album artist, sample rate) dibaca dengan `MediaMetadataRetriever` atau library tag.
-- Scan inkremental berdasarkan `DATE_MODIFIED`, dijalankan di `WorkManager` atau coroutine.
-- Izin: `READ_MEDIA_AUDIO` (Android 13+), `READ_EXTERNAL_STORAGE` untuk versi lama.
-
-## 8. Layar v1
-1. **Library:** tab Albums, Artists, Folders, Tracks.
-2. **Now Playing:** cover, kontrol, tombol shuffle dan repeat.
-3. **Queue sheet:** daftar Up next dengan drag, swipe, dan tap.
-4. **Playlists:** daftar dan detail.
-5. **Settings:** smart shuffle, sleep timer, folder scan.
-
-## 9. Dependensi Utama
-- `androidx.media3:media3-exoplayer`, `media3-session`, `media3-ui`
-- `androidx.room:room-runtime`, `room-ktx`, `room-compiler` (KSP)
-- `androidx.compose` BOM + Material 3
-- `io.coil-kt:coil-compose`
-- `androidx.datastore:datastore-preferences`
-- `sh.calvin.reorderable:reorderable` (drag-reorder di Compose)
-- Hilt (opsional)
-
-## 10. Risiko dan Catatan
-| Risiko | Mitigasi |
-|---|---|
-| Scan 3.000+ file lambat | Scan inkremental dan cache di Room |
-| Queue besar (1.000+ item) membuat UI lag | `LazyColumn` dengan key, batasi tampilan |
-| Kill oleh OEM battery saver | Foreground service dan panduan whitelist |
-| USB audio di v2 | Siapkan abstraksi `AudioOutput` agar mudah diganti nanti |
-
+## 5. Mekanisme State Preservation (Posisi Scroll)
+Menggunakan **`SaveableStateHolder`**:
+1. **Screen-level (`AppRoot`):** `screenSaveableStateHolder.SaveableStateProvider(screen)` mempertahankan scroll library saat membuka Now Playing, Queue, atau Settings.
+2. **Detail-level (`LibraryScreen`):** `detailStateHolder.SaveableStateProvider(currentDetailKey)` mempertahankan list album/artis saat masuk ke halaman detail lagu lalu menekan tombol Back.
+3. **Tab-level (`LibraryScreen`):** `tabStateHolder.SaveableStateProvider(currentTab)` mempertahankan scroll masing-masing tab secara independen saat berpindah tab.

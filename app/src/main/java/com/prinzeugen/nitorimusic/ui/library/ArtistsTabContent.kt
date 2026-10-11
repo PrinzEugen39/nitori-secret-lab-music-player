@@ -24,7 +24,10 @@ fun ArtistsTabContent(
     artists: List<Artist>,
     onArtistClick: (Artist) -> Unit,
 ) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 12.dp)
     ) {

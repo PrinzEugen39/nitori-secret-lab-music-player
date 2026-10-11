@@ -60,30 +60,34 @@ fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
         }
     }
 
+    val screenSaveableStateHolder = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+
     Column(Modifier.fillMaxSize()) {
         // Konten Halaman Aktif (Bisa Library, NowPlaying, Queue, atau Settings)
         Box(Modifier.weight(1f)) {
             Crossfade(targetState = screen, label = "screen_transition") { currentScreen ->
-                when (currentScreen) {
-                    Screen.Library -> LibraryScreen(
-                        viewModel = viewModel,
-                        hasPermission = hasPermission,
-                    )
-                    Screen.NowPlaying -> NowPlayingScreen(
-                        viewModel = viewModel,
-                        onBack = { screen = Screen.Library },
-                        onOpenQueue = { screen = Screen.Queue },
-                    )
-                    Screen.Queue -> QueueScreen(
-                        viewModel = viewModel,
-                        onBack = {
-                            screen = if (selectedAlbum != null) Screen.Library else Screen.NowPlaying
-                        },
-                    )
-                    Screen.Settings -> SettingsScreen(
-                        viewModel = viewModel,
-                        onBack = { screen = Screen.Library },
-                    )
+                screenSaveableStateHolder.SaveableStateProvider(currentScreen) {
+                    when (currentScreen) {
+                        Screen.Library -> LibraryScreen(
+                            viewModel = viewModel,
+                            hasPermission = hasPermission,
+                        )
+                        Screen.NowPlaying -> NowPlayingScreen(
+                            viewModel = viewModel,
+                            onBack = { screen = Screen.Library },
+                            onOpenQueue = { screen = Screen.Queue },
+                        )
+                        Screen.Queue -> QueueScreen(
+                            viewModel = viewModel,
+                            onBack = {
+                                screen = if (selectedAlbum != null) Screen.Library else Screen.NowPlaying
+                            },
+                        )
+                        Screen.Settings -> SettingsScreen(
+                            viewModel = viewModel,
+                            onBack = { screen = Screen.Library },
+                        )
+                    }
                 }
             }
         }
