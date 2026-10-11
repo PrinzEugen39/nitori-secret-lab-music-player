@@ -107,13 +107,11 @@ fun AlbumsTabContent(
             hasCustomArt = hasCustomArt,
             onPlayNext = { viewModel.playNextAlbum(album.id) },
             onAddToQueue = { viewModel.addAlbumToQueue(album.id) },
-            onRescan = { viewModel.rescanLibrary() },
             onChangeAlbumArt = {
                 targetAlbumIdForArt = album.id
                 pickImageLauncher.launch("image/*")
             },
             onRemoveCustomArt = { viewModel.removeCustomAlbumArt(album.id) },
-            onListOptions = onOpenListOptions,
             onDismiss = { targetAlbumForAction = null }
         )
     }

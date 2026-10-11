@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Button
@@ -215,10 +214,6 @@ fun LibraryScreen(
                                     IconButton(onClick = { showFolderSelection = true }) {
                                         Icon(Icons.Rounded.FolderOpen, contentDescription = stringResource(R.string.folder_selection_tooltip))
                                     }
-                                }
-
-                                IconButton(onClick = { viewModel.refreshLibrary(forceSync = true) }) {
-                                    Icon(Icons.Rounded.Refresh, contentDescription = stringResource(R.string.rescan_library_tooltip))
                                 }
 
                                 Button(

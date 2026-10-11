@@ -17,11 +17,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.playback.PlaybackController
 import com.prinzeugen.nitorimusic.playback.PlaybackUiState
+import com.prinzeugen.nitorimusic.ui.Screen
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,6 +68,8 @@ import kotlinx.coroutines.launch
 fun PowerampBottomBar(
     state: PlaybackUiState,
     playback: PlaybackController,
+    currentScreen: Screen = Screen.Library,
+    isSearchOpen: Boolean = false,
     showPlaybackRows: Boolean = true,
     onOpenNowPlaying: () -> Unit,
     onOpenQueue: () -> Unit,
@@ -228,10 +231,11 @@ fun PowerampBottomBar(
             ) {
                 // 1. Library Button
                 IconButton(onClick = onLibraryClick) {
+                    val isActive = currentScreen == Screen.Library && !isSearchOpen
                     Icon(
                         imageVector = Icons.Rounded.GridView,
                         contentDescription = stringResource(R.string.library),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -239,37 +243,43 @@ fun PowerampBottomBar(
                 IconButton(onClick = {
                     if (hasTrack) onOpenNowPlaying() else onLibraryClick()
                 }) {
+                    val isActive = currentScreen == Screen.NowPlaying && !isSearchOpen
                     Icon(
                         imageVector = Icons.Rounded.GraphicEq,
                         contentDescription = stringResource(R.string.now_playing),
-                        tint = if (hasTrack) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        tint = if (isActive) MaterialTheme.colorScheme.primary
+                        else if (hasTrack) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
 
                 // 3. Search Icon
                 IconButton(onClick = onOpenSearch) {
+                    val isActive = isSearchOpen
                     Icon(
                         imageVector = Icons.Rounded.Search,
                         contentDescription = stringResource(R.string.search),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 // 4. Current Queue Button (Up Next)
                 IconButton(onClick = onOpenQueue) {
+                    val isActive = currentScreen == Screen.Queue && !isSearchOpen
                     Icon(
-                        imageVector = Icons.Rounded.QueueMusic,
+                        imageVector = Icons.AutoMirrored.Rounded.QueueMusic,
                         contentDescription = stringResource(R.string.queue),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 // 5. Settings Button
                 IconButton(onClick = onOpenSettings) {
+                    val isActive = currentScreen == Screen.Settings && !isSearchOpen
                     Icon(
                         imageVector = Icons.Rounded.Settings,
                         contentDescription = stringResource(R.string.settings),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

@@ -14,9 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -42,7 +40,7 @@ import com.prinzeugen.nitorimusic.ui.formatTime
 /**
  * Album Detail / Context Dialog ala Poweramp:
  * Menampilkan thumbnail album, judul, artis, ♪ track count | total duration | year,
- * serta aksi Play Next, Queue, Rescan, Album Art (Pilih Gambar), dan List Options.
+ * serta aksi Play Next, Queue, dan Album Art (Pilih Gambar / Hapus Custom Art).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,10 +50,8 @@ fun AlbumActionDialog(
     hasCustomArt: Boolean,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
-    onRescan: () -> Unit,
     onChangeAlbumArt: () -> Unit,
     onRemoveCustomArt: () -> Unit,
-    onListOptions: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val totalDurationMs = tracks.sumOf { it.durationMs }
@@ -137,14 +133,6 @@ fun AlbumActionDialog(
                     }
                 )
                 AlbumActionItem(
-                    icon = Icons.Rounded.Refresh,
-                    label = stringResource(R.string.action_rescan),
-                    onClick = {
-                        onRescan()
-                        onDismiss()
-                    }
-                )
-                AlbumActionItem(
                     icon = Icons.Rounded.Image,
                     label = if (hasCustomArt) stringResource(R.string.action_change_album_art) else stringResource(R.string.action_pick_album_art),
                     onClick = {
@@ -162,14 +150,6 @@ fun AlbumActionDialog(
                         }
                     )
                 }
-                AlbumActionItem(
-                    icon = Icons.Rounded.Tune,
-                    label = stringResource(R.string.list_options_tooltip),
-                    onClick = {
-                        onListOptions()
-                        onDismiss()
-                    }
-                )
             }
         }
     }

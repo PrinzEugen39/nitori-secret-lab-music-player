@@ -77,10 +77,8 @@ fun AlbumDetailScreen(
             hasCustomArt = hasCustomArt,
             onPlayNext = { viewModel.playNextAlbum(album.id) },
             onAddToQueue = { viewModel.addAlbumToQueue(album.id) },
-            onRescan = { viewModel.rescanLibrary() },
             onChangeAlbumArt = { pickImageLauncher.launch("image/*") },
             onRemoveCustomArt = { viewModel.removeCustomAlbumArt(album.id) },
-            onListOptions = { /* bisa ditambahkan bila perlu */ },
             onDismiss = { showAlbumDialog = false }
         )
     }

@@ -96,6 +96,8 @@ fun AppRoot(viewModel: MainViewModel, hasPermission: Boolean) {
         PowerampBottomBar(
             state = playbackState,
             playback = viewModel.playback,
+            currentScreen = screen,
+            isSearchOpen = showSearch,
             showPlaybackRows = screen != Screen.NowPlaying,
             onOpenNowPlaying = { screen = Screen.NowPlaying },
             onOpenQueue = { screen = Screen.Queue },
