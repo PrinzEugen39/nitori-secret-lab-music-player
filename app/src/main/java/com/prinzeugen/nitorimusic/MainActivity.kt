@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         if (hasAllFilesPermission() && !hasRefreshedWithAllFiles) {
             hasRefreshedWithAllFiles = true
-            viewModel.refreshLibrary(forceSync = false)
+            viewModel.ensureLibraryLoaded()
         }
     }
 
@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(granted) {
-                    if (granted) viewModel.refreshLibrary(forceSync = false)
+                    if (granted) viewModel.ensureLibraryLoaded()
                 }
 
                 if (showAllFilesDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

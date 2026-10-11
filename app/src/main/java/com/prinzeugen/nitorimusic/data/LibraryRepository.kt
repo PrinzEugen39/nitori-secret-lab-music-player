@@ -241,17 +241,41 @@ class LibraryRepository(private val context: Context) {
             if (bytes != null && bytes.isNotEmpty()) {
                 val cueSheet = CueSheetParser.parseBytes(bytes)
                 if (cueSheet != null && cueSheet.tracks.isNotEmpty()) {
-                    Log.d(TAG, "Berhasil parse CUE: ${cueInfo.fileName} (${cueSheet.albumTitle}, ${cueSheet.tracks.size} tracks)")
+                    Log.d(TAG, "Ditemukan CUE: ${cueInfo.fileName} (${cueSheet.albumTitle}, ${cueSheet.tracks.size} tracks, ${cueSheet.audioFileCount} files)")
 
-                    // Cari calon lagu parent: pertama di folder yang sama, atau fallback ke album yang sama
+                    // 1. Lewati jika CUE berformat multi-file (masing-masing lagu sudah dibuat file terpisah oleh ripper)
+                    if (cueSheet.audioFileCount > 1) {
+                        Log.d(TAG, "Lewati CUE '${cueInfo.fileName}': Format multi-file (${cueSheet.audioFileCount} berkas), berkas audio sudah terpisah.")
+                        return@forEach
+                    }
+
+                    // 2. Lewati jika metadata judul trek rusak/tidak ada (misal hanya titik '....' hasil rip tanpa CD-Text)
+                    if (cueSheet.hasCorruptTitles()) {
+                        Log.w(TAG, "Lewati CUE '${cueInfo.fileName}': Metadata judul trek tidak valid/rusak (hanya titik). Mengutamakan metadata asli file audio.")
+                        return@forEach
+                    }
+
+                    // Cari calon lagu di folder CUE sheet
                     val folderTracks = tracks.filter { t ->
                         t.folderPath.equals(cueInfo.folder, ignoreCase = true) ||
                                 (t.folderPath.isNotEmpty() && cueInfo.folder.isNotEmpty() &&
                                         File(t.folderPath).name.equals(File(cueInfo.folder).name, ignoreCase = true))
                     }
 
+                    // 3. Lewati jika folder sudah memiliki berkas audio individual (> 2 lagu terpisah)
+                    // Poweramp & MusicBee hanya memecah CUE jika folder berisi 1 (atau maks 2) berkas monolithic image rip
+                    if (folderTracks.size > 2) {
+                        Log.d(TAG, "Lewati CUE '${cueInfo.fileName}': Folder sudah memiliki ${folderTracks.size} berkas audio individual.")
+                        return@forEach
+                    }
+
                     val candidates = if (folderTracks.isNotEmpty()) folderTracks else tracks.filter { t ->
                         cueSheet.albumTitle.isNotBlank() && t.album.equals(cueSheet.albumTitle, ignoreCase = true)
+                    }
+
+                    if (candidates.size > 2) {
+                        Log.d(TAG, "Lewati CUE '${cueInfo.fileName}': Terdapat ${candidates.size} lagu aktif untuk album ini di library.")
+                        return@forEach
                     }
 
                     // Algoritma Smart Scoring Matcher untuk menentukan lagu monolithic parent yang tepat
@@ -261,9 +285,20 @@ class LibraryRepository(private val context: Context) {
                     val cueAudioName = cueSheet.audioFileName
                     val cueAudioBase = File(cueAudioName).nameWithoutExtension
                     val cueBaseName = File(cueInfo.fileName).nameWithoutExtension
+                    val lastCueTrackStart = cueSheet.tracks.lastOrNull()?.startMs ?: 0L
 
                     for (t in candidates) {
                         if (replacedParentIds.contains(t.id)) continue
+
+                        // 4. Syarat mutlak Monolithic Image Rip:
+                        // - Durasi file audio harus memuat seluruh trek di CUE sheet (durasi >= startMs trek terakhir)
+                        if (lastCueTrackStart > 0L && t.durationMs < lastCueTrackStart) {
+                            continue
+                        }
+                        // - Durasi audio album monolitik harus panjang (minimal 8 menit / 480.000 ms)
+                        if (t.durationMs < 480_000L) {
+                            continue
+                        }
 
                         var score = 0
                         val tFileName = trackFileNames[t.id] ?: ""
@@ -300,19 +335,14 @@ class LibraryRepository(private val context: Context) {
                             }
                         }
 
-                        // 4. Monolithic audio rip matching (durasi panjang > 10 menit)
-                        val lastCueTrackStart = cueSheet.tracks.lastOrNull()?.startMs ?: 0L
+                        // 4. Durasi album rip panjang (> 10 menit)
                         if (t.durationMs > 600_000L) {
-                            if (lastCueTrackStart > 0L && t.durationMs >= lastCueTrackStart) {
-                                score += 40
-                            } else {
-                                score += 20
-                            }
+                            score += 40
                         }
 
                         // 5. Jika satu-satunya lagu dalam folder tersebut
                         if (candidates.size == 1) {
-                            score += 25
+                            score += 30
                         }
 
                         if (score > bestScore) {
@@ -321,7 +351,7 @@ class LibraryRepository(private val context: Context) {
                         }
                     }
 
-                    val parentTrack = if (bestScore >= 25) bestMatch else null
+                    val parentTrack = if (bestScore >= 50) bestMatch else null
 
                     if (parentTrack != null && !replacedParentIds.contains(parentTrack.id)) {
                         Log.d(TAG, "Cocok! Parent '${parentTrack.title}' (id=${parentTrack.id}, score=$bestScore) digantikan ${cueSheet.tracks.size} virtual tracks")

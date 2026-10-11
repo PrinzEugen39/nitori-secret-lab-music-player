@@ -168,6 +168,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
+     * Memastikan pustaka musik dimuat saat aplikasi dibuka (Startup).
+     * Sesuai standar Poweramp & MusicBee:
+     * - Jika cache Room DB sudah ada, gunakan cache langsung (0ms) TANPA memicu scanning ulang di latar belakang.
+     * - Hanya jika cache masih benar-benar kosong (pertama kali install aplikasi / data dibersihkan),
+     *   maka otomatis lakukan sinkronisasi pertama kali.
+     */
+    fun ensureLibraryLoaded() {
+        viewModelScope.launch {
+            val cached = repository.getCachedTracks()
+            if (cached.isNotEmpty()) {
+                _tracks.value = cached
+            } else {
+                refreshLibrary(forceSync = true)
+            }
+        }
+    }
+
+    /**
      * Memuat library secara offline-first ala Poweramp:
      * Selalu pastikan Room DB cache tampil langsung sehingga UI 0ms instan,
      * lalu lakukan sinkronisasi MediaStore & CUE parsing di background.

@@ -159,4 +159,52 @@ class CueSheetParserTest {
         assertEquals("Crisis!! (Instrumental)", cue.tracks[11].title)
         assertEquals(12, cue.tracks[11].trackNo)
     }
+
+    @Test
+    fun testMultiFileCueDetection() {
+        val multiFileCue = """
+            REM GENRE Touhou
+            PERFORMER "Various"
+            TITLE "Spring Sounds"
+            FILE "01 Track One.wav" WAVE
+              TRACK 01 AUDIO
+                TITLE "Track One"
+                INDEX 01 00:00:00
+            FILE "02 Track Two.wav" WAVE
+              TRACK 02 AUDIO
+                TITLE "Track Two"
+                INDEX 01 00:00:00
+        """.trimIndent()
+
+        val cue = CueSheetParser.parseBytes(multiFileCue.toByteArray(Charsets.UTF_8))
+        assertNotNull(cue)
+        cue!!
+        assertEquals(2, cue.audioFileCount)
+        assertEquals(false, cue.hasCorruptTitles())
+    }
+
+    @Test
+    fun testCorruptTitlesDetection() {
+        val corruptCue = """
+            REM GENRE Touhou
+            PERFORMER "......"
+            TITLE "SPRING SOUNDS"
+            FILE "01.wav" WAVE
+              TRACK 01 AUDIO
+                TITLE "...."
+                INDEX 01 00:00:00
+              TRACK 02 AUDIO
+                TITLE "........."
+                INDEX 01 03:00:00
+              TRACK 03 AUDIO
+                TITLE "Real Song"
+                INDEX 01 06:00:00
+        """.trimIndent()
+
+        val cue = CueSheetParser.parseBytes(corruptCue.toByteArray(Charsets.UTF_8))
+        assertNotNull(cue)
+        cue!!
+        assertEquals(true, cue.hasCorruptTitles())
+    }
 }
+

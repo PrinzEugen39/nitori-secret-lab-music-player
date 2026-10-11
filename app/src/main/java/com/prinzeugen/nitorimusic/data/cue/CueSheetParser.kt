@@ -19,7 +19,20 @@ data class CueSheet(
     val audioFileName: String,
     val year: Int = 0,
     val tracks: List<CueTrack>,
-)
+    val audioFileCount: Int = 1,
+) {
+    /**
+     * Memeriksa apakah metadata trek di CUE sheet rusak / kosong (misal hasil EAC rip tanpa CD-Text: "....", ".........").
+     */
+    fun hasCorruptTitles(): Boolean {
+        if (tracks.isEmpty()) return true
+        val corruptCount = tracks.count { t ->
+            val clean = t.title.trim()
+            clean.isEmpty() || clean.all { it == '.' || it == ' ' || it == '_' || it == '?' }
+        }
+        return corruptCount >= (tracks.size + 1) / 2
+    }
+}
 
 object CueSheetParser {
 
@@ -72,6 +85,7 @@ object CueSheetParser {
         var albumArtist = ""
         var audioFileName = ""
         var albumYear = 0
+        val audioFiles = mutableSetOf<String>()
         val rawTracks = mutableListOf<CueTrack>()
 
         var currentTrackNo: Int? = null
@@ -117,7 +131,11 @@ object CueSheetParser {
                 line.startsWith("FILE", ignoreCase = true) -> {
                     fileRegex.find(line)?.let { match ->
                         val extracted = match.groupValues[1].ifEmpty { match.groupValues[2] }.trim()
-                        audioFileName = File(extracted).name
+                        val baseName = File(extracted).name
+                        audioFiles.add(baseName)
+                        if (audioFileName.isEmpty()) {
+                            audioFileName = baseName
+                        }
                     }
                 }
                 line.startsWith("REM", ignoreCase = true) -> {
@@ -167,6 +185,7 @@ object CueSheetParser {
             audioFileName = audioFileName,
             year = albumYear,
             tracks = resolvedTracks,
+            audioFileCount = audioFiles.size.coerceAtLeast(1),
         )
     }
 
