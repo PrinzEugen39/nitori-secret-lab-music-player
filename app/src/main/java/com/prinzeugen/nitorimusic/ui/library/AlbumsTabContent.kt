@@ -345,23 +345,23 @@ fun AlbumsTabContent(
                     }
                 }
             }
+        }
 
-            if (!isSelectionMode) {
-                FastAlphabetScroller(
-                    items = albums,
-                    itemTitle = { it.title },
-                    onScrollToIndex = { targetIdx ->
-                        scope.launch {
-                            if (layout == ViewLayout.GRID) {
-                                gridState.scrollToItem(targetIdx)
-                            } else {
-                                listState.scrollToItem(targetIdx)
-                            }
+        if (!isSelectionMode) {
+            FastAlphabetScroller(
+                items = albums,
+                itemTitle = { it.title },
+                onScrollToIndex = { targetIdx ->
+                    scope.launch {
+                        if (layout == ViewLayout.GRID) {
+                            gridState.scrollToItem(targetIdx)
+                        } else {
+                            listState.scrollToItem(targetIdx)
                         }
-                    },
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
-            }
+                    }
+                },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
         }
     }
 }

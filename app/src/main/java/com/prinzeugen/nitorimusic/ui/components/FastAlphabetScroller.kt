@@ -42,15 +42,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val ALPHABET = listOf(
-    "#", "A", "B", "C", "D", "E", "F", "G", "H", "I",
+    "▲", "#", "A", "B", "C", "D", "E", "F", "G", "H", "I",
     "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
     "T", "U", "V", "W", "X", "Y", "Z"
 )
 
 /**
  * Fast Alphabet Scroller (A-Z Indexer) di tepi kanan layar ala Poweramp.
- * Mendukung drag vertikal dan tap untuk langsung melompat ke huruf target
- * dengan visual bubble floating indicator.
+ * Terlihat persisten/visible terus, mendukung drag vertikal dan tap untuk langsung melompat
+ * ke huruf target dengan visual bubble floating indicator.
  */
 @Composable
 fun <T> FastAlphabetScroller(
@@ -59,7 +59,7 @@ fun <T> FastAlphabetScroller(
     onScrollToIndex: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (items.size < 10) return
+    if (items.size < 5) return
 
     val scope = rememberCoroutineScope()
     var isDragging by remember { mutableStateOf(false) }
@@ -91,12 +91,15 @@ fun <T> FastAlphabetScroller(
 
         hideJob?.cancel()
 
-        // Cari index terdekat jika huruf exact tidak ada
-        val targetIdx = letterIndexMap[letter] ?: run {
-            // Cari huruf terdekat sesudahnya, jika tidak ada mundur ke sebelumnya
-            val nextLetters = ALPHABET.drop(letterIndex)
-            val foundNext = nextLetters.firstNotNullOfOrNull { letterIndexMap[it] }
-            foundNext ?: letterIndexMap.values.lastOrNull() ?: 0
+        val targetIdx = if (letter == "▲") {
+            0
+        } else {
+            letterIndexMap[letter] ?: run {
+                // Cari huruf terdekat sesudahnya, jika tidak ada mundur ke sebelumnya
+                val nextLetters = ALPHABET.drop(letterIndex)
+                val foundNext = nextLetters.firstNotNullOfOrNull { letterIndexMap[it] }
+                foundNext ?: letterIndexMap.values.lastOrNull() ?: 0
+            }
         }
 
         onScrollToIndex(targetIdx)
@@ -105,7 +108,7 @@ fun <T> FastAlphabetScroller(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .padding(vertical = 12.dp, horizontal = 2.dp)
+            .padding(vertical = 8.dp, horizontal = 1.dp)
             .zIndex(100f),
         contentAlignment = Alignment.CenterEnd
     ) {
@@ -114,10 +117,10 @@ fun <T> FastAlphabetScroller(
             visible = isDragging && activeLetter != null,
             enter = fadeIn() + scaleIn(),
             exit = fadeOut() + scaleOut(),
-            modifier = Modifier.padding(end = 40.dp)
+            modifier = Modifier.padding(end = 36.dp)
         ) {
             Surface(
-                modifier = Modifier.size(60.dp),
+                modifier = Modifier.size(56.dp),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary,
                 tonalElevation = 8.dp,
@@ -125,10 +128,10 @@ fun <T> FastAlphabetScroller(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = activeLetter.orEmpty(),
-                        style = MaterialTheme.typography.headlineMedium.copy(
+                        text = if (activeLetter == "▲") "Top" else activeLetter.orEmpty(),
+                        style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Black,
-                            fontSize = 32.sp
+                            fontSize = if (activeLetter == "▲") 18.sp else 28.sp
                         ),
                         color = MaterialTheme.colorScheme.onPrimary,
                         textAlign = TextAlign.Center
@@ -137,17 +140,17 @@ fun <T> FastAlphabetScroller(
             }
         }
 
-        // Vertical Alphabet Touch Strip
+        // Vertical Alphabet Touch Strip ala Poweramp
         Column(
             modifier = Modifier
-                .width(22.dp)
-                .fillMaxHeight(0.94f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
+                .width(18.dp)
+                .fillMaxHeight(0.92f)
+                .clip(RoundedCornerShape(9.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f))
                 .border(
-                    width = 0.8.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                    shape = RoundedCornerShape(12.dp)
+                    width = 0.6.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(9.dp)
                 )
                 .padding(vertical = 4.dp)
                 .onGloballyPositioned { coordinates ->
@@ -198,10 +201,10 @@ fun <T> FastAlphabetScroller(
                 ) {
                     Text(
                         text = char,
-                        fontSize = 8.5.sp,
+                        fontSize = if (char == "▲") 7.sp else 8.sp,
                         fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
                         color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
                         textAlign = TextAlign.Center,
                     )
                 }
