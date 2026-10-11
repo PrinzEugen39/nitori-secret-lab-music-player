@@ -52,8 +52,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.MusicFolder
 import java.io.File
 
@@ -122,14 +124,14 @@ fun FolderSelectionDialog(
             ) {
                 // Header Dialog
                 Text(
-                    text = "Folders Selection",
+                    text = stringResource(R.string.folder_selection_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = "Pilih folder yang memuat file musik Anda. Folder rekaman & chat (WhatsApp/Telegram) otomatis diabaikan.",
+                    text = stringResource(R.string.folder_selection_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -152,13 +154,13 @@ fun FolderSelectionDialog(
                     ) {
                         Column(Modifier.padding(14.dp)) {
                             Text(
-                                "Belum ada folder khusus yang dipilih.",
+                                stringResource(R.string.folder_selection_empty_title),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Secara default seluruh penyimpanan dipindai dengan mengecualikan audio chat (WhatsApp, Telegram) dan rekaman. Tekan tombol di bawah untuk membatasi scan hanya ke folder musik Anda.",
+                                stringResource(R.string.folder_selection_empty_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -225,7 +227,7 @@ fun FolderSelectionDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Close,
-                                        contentDescription = "Hapus",
+                                        contentDescription = stringResource(R.string.folder_selection_remove),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -258,7 +260,7 @@ fun FolderSelectionDialog(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Select Folder or Storage")
+                    Text(stringResource(R.string.folder_selection_pick_btn))
                 }
 
                 Spacer(Modifier.height(8.dp))
@@ -267,7 +269,7 @@ fun FolderSelectionDialog(
 
                 if (!hasActiveFolder) {
                     Text(
-                        text = "Pilih minimal 1 folder musik yang aktif untuk memindai.",
+                        text = stringResource(R.string.folder_selection_min_error),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
@@ -291,7 +293,7 @@ fun FolderSelectionDialog(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Save and Scan", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.folder_selection_save_btn), fontWeight = FontWeight.Bold)
                 }
             }
         }

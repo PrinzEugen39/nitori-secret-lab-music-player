@@ -56,12 +56,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import androidx.palette.graphics.Palette
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.data.ArtworkLoader
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -320,7 +322,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = state.title.ifEmpty { "Tidak ada lagu" },
+                    text = state.title.ifEmpty { stringResource(R.string.now_playing_no_track) },
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
@@ -333,7 +335,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = state.artist.ifEmpty { "Artis tidak diketahui" },
+                        text = state.artist.ifEmpty { stringResource(R.string.now_playing_unknown_artist) },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -378,7 +380,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 ) {
                     Icon(
                         Icons.Rounded.Shuffle,
-                        contentDescription = "Shuffle",
+                        contentDescription = stringResource(R.string.shuffle),
                         tint = if (isShuffleOn) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -387,7 +389,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 IconButton(onClick = { showSleepTimer = true }) {
                     Icon(
                         Icons.Rounded.Timer,
-                        contentDescription = "Sleep Timer",
+                        contentDescription = stringResource(R.string.sleep_timer_title_set),
                         tint = if (state.sleepTimerSecondsLeft > 0) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -419,7 +421,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     }
                     val tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
-                    Icon(icon, contentDescription = "Repeat", tint = tint)
+                    Icon(icon, contentDescription = stringResource(R.string.repeat), tint = tint)
                 }
             }
 
@@ -463,7 +465,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     onClick = { playback.previous(forcePreviousItem = true) },
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Rounded.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Rounded.SkipPrevious, contentDescription = stringResource(R.string.previous), modifier = Modifier.size(32.dp))
                 }
 
                 Spacer(Modifier.size(24.dp))
@@ -482,7 +484,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     ) {
                         Icon(
                             imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            contentDescription = if (state.isPlaying) "Pause" else "Play",
+                            contentDescription = if (state.isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(36.dp)
                         )
@@ -495,7 +497,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     onClick = playback::next,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Rounded.SkipNext, contentDescription = "Next", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Rounded.SkipNext, contentDescription = stringResource(R.string.next), modifier = Modifier.size(32.dp))
                 }
             }
 

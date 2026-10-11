@@ -29,10 +29,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
 import com.prinzeugen.nitorimusic.ui.formatTime
@@ -79,13 +81,13 @@ fun SearchDialog(
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text("Cari judul, artis, album...") },
+                        placeholder = { Text(stringResource(R.string.search_placeholder)) },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     )
                     TextButton(onClick = onDismiss, modifier = Modifier.padding(start = 8.dp)) {
-                        Text("Tutup")
+                        Text(stringResource(R.string.close))
                     }
                 }
 
@@ -93,7 +95,7 @@ fun SearchDialog(
 
                 if (query.isNotBlank()) {
                     Text(
-                        "${filtered.size} hasil ditemukan",
+                        stringResource(R.string.search_results_count, filtered.size),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 6.dp)

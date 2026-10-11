@@ -12,7 +12,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 
 @Composable
 fun SleepTimerDialog(
@@ -27,11 +29,11 @@ fun SleepTimerDialog(
     val titleText = if (currentSecondsLeft > 0) {
         val min = currentSecondsLeft / 60
         val sec = currentSecondsLeft % 60
-        "Sleep Timer: %02d:%02d lagi".format(min, sec)
+        stringResource(R.string.sleep_timer_title_remaining, "%02d:%02d".format(min, sec))
     } else if (currentMinutesLeft > 0) {
-        "Sleep Timer: $currentMinutesLeft mnt lagi"
+        stringResource(R.string.sleep_timer_title_min_remaining, currentMinutesLeft)
     } else {
-        "Set Sleep Timer"
+        stringResource(R.string.sleep_timer_title_set)
     }
 
     AlertDialog(
@@ -55,7 +57,7 @@ fun SleepTimerDialog(
                             .padding(vertical = 12.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("$minutes menit", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.sleep_timer_minutes, minutes), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -71,7 +73,7 @@ fun SleepTimerDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "Matikan Timer",
+                            stringResource(R.string.sleep_timer_turn_off),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -80,7 +82,7 @@ fun SleepTimerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Tutup") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         }
     )
 }

@@ -3,6 +3,7 @@ package com.prinzeugen.nitorimusic.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.data.LibraryRepository
 import com.prinzeugen.nitorimusic.data.SettingsStore
 import com.prinzeugen.nitorimusic.domain.model.Album
@@ -71,6 +72,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val selectedMusicFolders: StateFlow<List<MusicFolder>> = settings.selectedMusicFolders
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val appLanguage: StateFlow<String> = settings.appLanguage
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+
+    fun setAppLanguage(languageCode: String) {
+        viewModelScope.launch { settings.setAppLanguage(languageCode) }
+    }
 
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
@@ -209,7 +217,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             _isScanning.value = true
-            _scanStatus.value = "Memeriksa berkas musik..."
+            _scanStatus.value = getApplication<Application>().getString(R.string.scan_checking_files)
             try {
                 val synced = repository.syncFromMediaStore(enabledFolders = enabledFolders) { status ->
                     _scanStatus.value = status
@@ -240,7 +248,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val configured = settings.selectedMusicFolders.first()
             val enabledFolders = configured.filter { it.isEnabled }.map { it.path }
             _isScanning.value = true
-            _scanStatus.value = "Menghapus cache & memindai ulang..."
+            _scanStatus.value = getApplication<Application>().getString(R.string.scan_clearing_cache)
             try {
                 repository.clearCache()
                 val synced = repository.syncFromMediaStore(enabledFolders = enabledFolders) { status ->

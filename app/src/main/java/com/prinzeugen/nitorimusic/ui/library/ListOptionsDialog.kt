@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.ListOptions
 import com.prinzeugen.nitorimusic.domain.model.SortType
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
@@ -45,14 +47,14 @@ fun ListOptionsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("List Options: $title", style = MaterialTheme.typography.titleLarge) },
+        title = { Text(stringResource(R.string.list_options_dialog_title, title), style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(
                 Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                Text("Sort", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.list_options_sort_section), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(4.dp))
 
                 val availableSorts = listOf(
@@ -76,7 +78,7 @@ fun ListOptionsDialog(
                             onClick = { sortType = type }
                         )
                         Text(
-                            type.label,
+                            stringResource(type.labelRes),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(start = 8.dp)
                         )
@@ -95,7 +97,7 @@ fun ListOptionsDialog(
                         onCheckedChange = { reverse = it }
                     )
                     Text(
-                        "Reverse",
+                        stringResource(R.string.list_options_reverse),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(start = 8.dp)
                     )
@@ -103,7 +105,7 @@ fun ListOptionsDialog(
 
                 HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-                Text("Layout", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.list_options_layout_section), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(4.dp))
 
                 Row(
@@ -118,7 +120,7 @@ fun ListOptionsDialog(
                         onClick = { layout = ViewLayout.GRID }
                     )
                     Text(
-                        "Grid",
+                        stringResource(R.string.list_options_layout_grid),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(start = 8.dp)
                     )
@@ -131,7 +133,7 @@ fun ListOptionsDialog(
                             .padding(start = 32.dp, top = 4.dp, bottom = 8.dp)
                     ) {
                         Text(
-                            "Columns: $gridColumns",
+                            stringResource(R.string.list_options_columns, gridColumns),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -162,7 +164,7 @@ fun ListOptionsDialog(
                         onClick = { layout = ViewLayout.LIST }
                     )
                     Text(
-                        "List",
+                        stringResource(R.string.list_options_layout_list),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(start = 8.dp)
                     )
@@ -183,7 +185,7 @@ fun ListOptionsDialog(
                     onDismiss()
                 }
             ) {
-                Text("Close")
+                Text(stringResource(R.string.close))
             }
         }
     )

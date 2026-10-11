@@ -1,6 +1,6 @@
 package com.prinzeugen.nitorimusic.ui.settings
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,15 +19,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Storage
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Whatshot
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,23 +38,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.library.FolderSelectionDialog
 
@@ -73,10 +76,23 @@ fun SettingsScreen(
     val keepQueueOnPlay by viewModel.keepQueueOnPlay.collectAsState()
     val countThreshold by viewModel.countAsPlayedThreshold.collectAsState()
     val selectedMusicFolders by viewModel.selectedMusicFolders.collectAsState()
+    val appLanguage by viewModel.appLanguage.collectAsState()
 
     var showFolderSelectionDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
+
+    if (showLanguageDialog) {
+        LanguagePickerDialog(
+            currentLanguage = appLanguage,
+            onSelectLanguage = { lang ->
+                viewModel.setAppLanguage(lang)
+                showLanguageDialog = false
+            },
+            onDismiss = { showLanguageDialog = false }
+        )
+    }
 
     Column(
         Modifier
@@ -91,11 +107,11 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBack, contentDescription = "Kembali")
+                Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Spacer(Modifier.width(8.dp))
             Text(
-                "Pengaturan",
+                stringResource(R.string.settings_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -109,41 +125,90 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // --- Section 1: Audio Engine ---
-            SectionHeader(icon = Icons.Rounded.GraphicEq, title = "Audio Engine")
+            // --- Section 1: Language / Bahasa ---
+            SectionHeader(icon = Icons.Rounded.Language, title = stringResource(R.string.settings_section_language))
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { showLanguageDialog = true }
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.settings_language_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        val languageLabel = when (appLanguage) {
+                            "en" -> stringResource(R.string.settings_language_en)
+                            "in" -> stringResource(R.string.settings_language_id)
+                            else -> stringResource(R.string.settings_language_system)
+                        }
+                        Text(
+                            languageLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Icon(
+                        Icons.Rounded.Language,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- Section 2: Audio Engine ---
+            SectionHeader(icon = Icons.Rounded.GraphicEq, title = stringResource(R.string.settings_section_audio))
 
             SettingSwitchRow(
-                title = "Gapless Playback",
-                subtitle = "Transisi antar lagu tanpa celah hening (seamless playback)",
+                title = stringResource(R.string.settings_gapless_title),
+                subtitle = stringResource(R.string.settings_gapless_desc),
                 checked = gapless,
                 onCheckedChange = viewModel::setGaplessEnabled
             )
 
             SettingSwitchRow(
-                title = "Normalisasi Volume (ReplayGain)",
-                subtitle = "Menyelaraskan kenyaringan audio secara otomatis (ReplayGain / R128)",
+                title = stringResource(R.string.settings_replaygain_title),
+                subtitle = stringResource(R.string.settings_replaygain_desc),
                 checked = replayGain,
                 onCheckedChange = viewModel::setReplayGainEnabled
             )
 
             SettingSwitchRow(
-                title = "Jeda saat Headset Lepas",
-                subtitle = "Otomatis pause musik saat earphone kabel atau Bluetooth terputus",
+                title = stringResource(R.string.settings_pause_headset_title),
+                subtitle = stringResource(R.string.settings_pause_headset_desc),
                 checked = pauseOnHeadset,
                 onCheckedChange = viewModel::setPauseOnHeadsetDisconnect
             )
 
             SettingSwitchRow(
-                title = "Audio Focus Handling",
-                subtitle = "Otomatis kecilkan volume atau pause saat menerima telepon atau notifikasi",
+                title = stringResource(R.string.settings_audio_focus_title),
+                subtitle = stringResource(R.string.settings_audio_focus_desc),
                 checked = audioFocus,
                 onCheckedChange = viewModel::setAudioFocusEnabled
             )
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 2: Library & Room Cache ---
-            SectionHeader(icon = Icons.Rounded.Storage, title = "Library & Database Cache")
+            // --- Section 3: Library & Room Cache ---
+            SectionHeader(icon = Icons.Rounded.Storage, title = stringResource(R.string.settings_section_library))
 
             // Folders Selection Card (Poweramp-style)
             Card(
@@ -165,15 +230,19 @@ fun SettingsScreen(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "Folders Selection",
+                            stringResource(R.string.settings_folders_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         val folderSubtitle = if (selectedMusicFolders.isEmpty()) {
-                            "Default (seluruh folder musik, abaikan WhatsApp & rekaman)"
+                            stringResource(R.string.settings_folders_default)
                         } else {
                             val enabledCount = selectedMusicFolders.count { it.isEnabled }
-                            "$enabledCount folder aktif (${selectedMusicFolders.joinToString(", ") { it.displayName }})"
+                            stringResource(
+                                R.string.settings_folders_active,
+                                enabledCount,
+                                selectedMusicFolders.joinToString(", ") { it.displayName }
+                            )
                         }
                         Text(
                             folderSubtitle,
@@ -207,12 +276,12 @@ fun SettingsScreen(
                     ) {
                         Column {
                             Text(
-                                "Database Cache Room",
+                                stringResource(R.string.settings_db_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                "${tracks.size} lagu tersimpan di cache lokal",
+                                stringResource(R.string.settings_db_tracks_cached, tracks.size),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -232,7 +301,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Pindai Ulang")
+                            Text(stringResource(R.string.settings_btn_rescan))
                         }
 
                         OutlinedButton(
@@ -240,7 +309,7 @@ fun SettingsScreen(
                             enabled = !isScanning,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Reset Cache")
+                            Text(stringResource(R.string.settings_btn_reset_cache))
                         }
                     }
                 }
@@ -248,8 +317,8 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 3: Smart Shuffle ---
-            SectionHeader(icon = Icons.Rounded.Shuffle, title = "Smart Shuffle")
+            // --- Section 4: Smart Shuffle ---
+            SectionHeader(icon = Icons.Rounded.Shuffle, title = stringResource(R.string.settings_section_shuffle))
 
             Card(
                 colors = CardDefaults.cardColors(
@@ -266,7 +335,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "Sebaran Artis",
+                            stringResource(R.string.settings_shuffle_spread_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -279,8 +348,8 @@ fun SettingsScreen(
                     }
 
                     Text(
-                        if (spread < 0.1f) "Acak murni (Fisher-Yates)"
-                        else "Semakin tinggi, semakin kecil kemungkinan lagu dari artis yang sama muncul berturutan.",
+                        if (spread < 0.1f) stringResource(R.string.settings_shuffle_spread_pure)
+                        else stringResource(R.string.settings_shuffle_spread_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 4.dp)
@@ -298,32 +367,32 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 4: Tampilan & Sampul Album (Now Playing UX) ---
-            SectionHeader(icon = Icons.Rounded.Image, title = "Tampilan & Sampul Album")
+            // --- Section 5: Display & Album Art ---
+            SectionHeader(icon = Icons.Rounded.Image, title = stringResource(R.string.settings_section_appearance))
 
             SettingSwitchRow(
-                title = "Pertahankan Rasio Asli Cover Art (Fit)",
-                subtitle = "Menampilkan gambar sampul sesuai proporsinya tanpa terpotong (ala Poweramp). Nonaktifkan untuk mengisi penuh kotak (Crop).",
+                title = stringResource(R.string.settings_art_fit_title),
+                subtitle = stringResource(R.string.settings_art_fit_desc),
                 checked = albumArtFitMode,
                 onCheckedChange = viewModel::setAlbumArtFitMode
             )
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 5: Antrean & Pemutaran (Queue Behavior) ---
-            SectionHeader(icon = Icons.AutoMirrored.Rounded.QueueMusic, title = "Antrean & Pemutaran")
+            // --- Section 6: Queue & Playback ---
+            SectionHeader(icon = Icons.AutoMirrored.Rounded.QueueMusic, title = stringResource(R.string.settings_section_queue))
 
             SettingSwitchRow(
-                title = "Lanjut Mainkan di Antrean yang Sama",
-                subtitle = "Memutar lagu dari daftar/album langsung di dalam antrean aktif tanpa mereset atau membuat antrean baru (ala Poweramp).",
+                title = stringResource(R.string.settings_keep_queue_title),
+                subtitle = stringResource(R.string.settings_keep_queue_desc),
                 checked = keepQueueOnPlay,
                 onCheckedChange = viewModel::setKeepQueueOnPlay
             )
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 6: Statistik Lagu (Most Played) ---
-            SectionHeader(icon = Icons.Rounded.Whatshot, title = "Statistik Pemutaran (Most Played)")
+            // --- Section 7: Statistics (Most Played) ---
+            SectionHeader(icon = Icons.Rounded.Whatshot, title = stringResource(R.string.settings_section_stats))
 
             Card(
                 colors = CardDefaults.cardColors(
@@ -340,7 +409,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "Batas Hitung Lagu Diputar",
+                            stringResource(R.string.settings_threshold_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -353,7 +422,7 @@ fun SettingsScreen(
                     }
 
                     Text(
-                        "Lagu akan dihitung telah diputar (+1) dan masuk ke tab 'Most Played' setelah dimainkan minimal $countThreshold% dari total durasinya.",
+                        stringResource(R.string.settings_threshold_desc, countThreshold),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 4.dp)
@@ -371,8 +440,8 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 7: Tentang ---
-            SectionHeader(icon = Icons.Rounded.Info, title = "Tentang")
+            // --- Section 8: About ---
+            SectionHeader(icon = Icons.Rounded.Info, title = stringResource(R.string.settings_section_about))
 
             Card(
                 colors = CardDefaults.cardColors(
@@ -385,18 +454,18 @@ fun SettingsScreen(
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text(
-                        "Nitori Secret Lab Music Player",
+                        stringResource(R.string.settings_about_app_name),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "Versi 1.0 • Offline Hi-Fi Music Player",
+                        stringResource(R.string.settings_about_version),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Fokus pada reproduksi audio murni (uncolored playback), antrean Up Next yang fleksibel, dan performa cepat tanpa lag.",
+                        stringResource(R.string.settings_about_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -414,6 +483,59 @@ fun SettingsScreen(
             onDismiss = { showFolderSelectionDialog = false }
         )
     }
+}
+
+@Composable
+private fun LanguagePickerDialog(
+    currentLanguage: String,
+    onSelectLanguage: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf(
+        "system" to stringResource(R.string.settings_language_system),
+        "en" to stringResource(R.string.settings_language_en),
+        "in" to stringResource(R.string.settings_language_id),
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(R.string.settings_language_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(Modifier.fillMaxWidth()) {
+                options.forEach { (code, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectLanguage(code) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentLanguage == code,
+                            onClick = { onSelectLanguage(code) }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (currentLanguage == code) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    )
 }
 
 @Composable

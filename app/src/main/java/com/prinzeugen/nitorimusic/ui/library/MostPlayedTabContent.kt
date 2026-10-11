@@ -35,11 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -112,14 +114,14 @@ fun MostPlayedTabContent(
                 }
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Belum Ada Riwayat Pemutaran",
+                    text = stringResource(R.string.most_played_empty_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Lagu yang diputar hingga melewati batas yang diatur (default 50%) akan otomatis tercatat dan muncul di tab ini.",
+                    text = stringResource(R.string.most_played_empty_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -191,7 +193,7 @@ fun MostPlayedTabContent(
                                 modifier = Modifier.padding(end = 6.dp)
                             ) {
                                 Text(
-                                    text = "★ ${track.playCount}x",
+                                    text = stringResource(R.string.most_played_times, track.playCount),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold

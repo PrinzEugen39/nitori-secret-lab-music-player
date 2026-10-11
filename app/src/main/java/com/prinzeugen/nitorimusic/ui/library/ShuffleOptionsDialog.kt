@@ -15,9 +15,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.prinzeugen.nitorimusic.R
 import kotlin.math.roundToInt
 
-/** Slider randomness: kiri = acak murni, kanan = lagu satu artis disebar merata. */
 @Composable
 fun ShuffleOptionsDialog(
     spread: Float,
@@ -28,11 +29,11 @@ fun ShuffleOptionsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Opsi shuffle") },
+        title = { Text(stringResource(R.string.shuffle_options_title)) },
         text = {
             Column {
                 Text(
-                    "Sebar artis: ${(value * 100).roundToInt()}%",
+                    stringResource(R.string.shuffle_spread_label, (value * 100).roundToInt()),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Slider(
@@ -41,18 +42,17 @@ fun ShuffleOptionsDialog(
                     onValueChangeFinished = { onSpreadChange(value) },
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Acak murni", style = MaterialTheme.typography.bodySmall)
-                    Text("Sebar merata", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.shuffle_pure_random), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.shuffle_even_spread), style = MaterialTheme.typography.bodySmall)
                 }
                 Text(
-                    "Semakin kanan, lagu dari artis yang sama makin jarang berdekatan.",
+                    stringResource(R.string.shuffle_spread_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
     )
 }
-

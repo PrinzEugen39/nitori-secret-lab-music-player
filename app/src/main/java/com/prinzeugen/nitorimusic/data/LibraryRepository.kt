@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.data.cue.CueSheet
 import com.prinzeugen.nitorimusic.data.cue.CueSheetParser
 import com.prinzeugen.nitorimusic.data.db.AppDatabase
@@ -110,7 +111,7 @@ class LibraryRepository(private val context: Context) {
         enabledFolders: List<String> = emptyList(),
         onProgress: ((String) -> Unit)? = null
     ): List<Track> = withContext(Dispatchers.IO) {
-        onProgress?.invoke("Membaca data audio media...")
+        onProgress?.invoke(context.getString(R.string.scan_reading_audio))
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -316,7 +317,7 @@ class LibraryRepository(private val context: Context) {
 
         Log.d(TAG, "Total file CUE ditemukan: ${cueFiles.size}")
         if (cueFiles.isNotEmpty()) {
-            onProgress?.invoke("Memproses ${cueFiles.size} berkas CUE Sheet...")
+            onProgress?.invoke(context.getString(R.string.scan_processing_cue, cueFiles.size))
         }
 
         val finalTracks = ArrayList(tracks)
@@ -498,7 +499,7 @@ class LibraryRepository(private val context: Context) {
         }
 
         // Simpan ke cache Room DB
-        onProgress?.invoke("Menyimpan pustaka musik...")
+        onProgress?.invoke(context.getString(R.string.scan_syncing_library))
         val entities = finalTracks.map { TrackEntity.fromDomain(it) }
         trackDao.replaceAll(entities)
 

@@ -52,10 +52,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -376,7 +378,7 @@ fun TracksTabContent(
                             }
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "All",
+                                stringResource(R.string.all),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -397,7 +399,7 @@ fun TracksTabContent(
                             },
                             modifier = Modifier.size(32.dp)
                         ) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Close Selection")
+                            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.close_selection))
                         }
                     }
 
@@ -418,7 +420,7 @@ fun TracksTabContent(
                         // Queue Action
                         TrackSelectionActionButton(
                             icon = Icons.AutoMirrored.Rounded.QueueMusic,
-                            label = "Queue",
+                            label = stringResource(R.string.queue),
                             enabled = selectedTrackIds.isNotEmpty(),
                             onClick = {
                                 onAddTracksToQueue(selectedTracks)
@@ -430,7 +432,7 @@ fun TracksTabContent(
                         // Play Next Action
                         TrackSelectionActionButton(
                             icon = Icons.Rounded.SkipNext,
-                            label = "Play Next",
+                            label = stringResource(R.string.action_play_next),
                             enabled = selectedTrackIds.isNotEmpty(),
                             onClick = {
                                 onPlayNextTracks(selectedTracks)

@@ -15,8 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Folder
 
 @Composable
@@ -47,7 +49,7 @@ fun FoldersTabContent(
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        "${folder.trackCount} lagu • ${folder.path}",
+                        stringResource(R.string.folder_item_meta, folder.trackCount, folder.path),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodySmall,

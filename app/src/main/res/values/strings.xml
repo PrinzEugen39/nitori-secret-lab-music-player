@@ -1,3 +1,212 @@
 <resources>
     <string name="app_name">Nitori Music</string>
+
+    <!-- General & Actions -->
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="shuffle_all">Shuffle all</string>
+    <string name="repeat">Repeat</string>
+    <string name="library">Library</string>
+    <string name="now_playing">Now Playing</string>
+    <string name="search">Search</string>
+    <string name="queue">Queue</string>
+    <string name="up_next">Up next (%1$d)</string>
+    <string name="settings">Settings</string>
+    <string name="options">Options</string>
+    <string name="all">All</string>
+    <string name="image">Image</string>
+    <string name="drag_to_reorder">Drag to reorder</string>
+
+    <!-- Permissions -->
+    <string name="permission_audio_required">Audio access permission is required to read your music library.</string>
+    <string name="cue_permission_dialog_title">File Access Permission for CUE Sheets</string>
+    <string name="cue_permission_dialog_msg">To detect .cue (CUE Sheet) files and split albums into individual tracks (like Poweramp), All Files Access permission is required.\n\nOpen Settings to enable permission?</string>
+    <string name="cue_permission_open_settings">Open Settings</string>
+    <string name="cue_permission_later">Not Now</string>
+
+    <!-- Library Tabs -->
+    <string name="tab_tracks">Tracks</string>
+    <string name="tab_albums">Albums</string>
+    <string name="tab_artists">Artists</string>
+    <string name="tab_most_played">Most Played</string>
+    <string name="tab_folders">Folders</string>
+
+    <!-- Library Headers & Counts -->
+    <string name="header_albums_count">%1$d albums • %2$s</string>
+    <string name="header_tracks_count">%1$d tracks • %2$s</string>
+    <string name="header_artists_count">%1$d artists • %2$s</string>
+    <string name="header_most_played_count">%1$d frequently played tracks</string>
+    <string name="header_folders_count">%1$d folders • %2$s</string>
+
+    <!-- Library Onboarding -->
+    <string name="onboarding_select_folders_title">Select Music Folders</string>
+    <string name="onboarding_select_folders_desc">Choose your music collection folders (such as Music) for lightning-fast scanning like Poweramp, automatically ignoring chat audio and recordings.</string>
+    <string name="onboarding_select_folders_btn">Select Music Folders</string>
+
+    <!-- Scanning Progress & Tooltips -->
+    <string name="scan_syncing_library">Syncing music library…</string>
+    <string name="scan_reading_audio">Reading audio files…</string>
+    <string name="scan_processing_cue">Processing %1$d CUE sheet files…</string>
+    <string name="scan_checking_files">Checking music files…</string>
+    <string name="scan_clearing_cache">Clearing cache &amp; rescanning…</string>
+    <string name="rescan_library_tooltip">Rescan Library</string>
+    <string name="list_options_tooltip">List Options</string>
+    <string name="folder_selection_tooltip">Folders Selection</string>
+
+    <!-- Detail Screens -->
+    <string name="album_detail_title">Albums</string>
+    <string name="album_detail_meta">%1$d tracks • %2$s</string>
+    <string name="album_menu_tooltip">Album Menu</string>
+    <string name="back_to_albums">Back to Albums</string>
+    <string name="artist_detail_meta">%1$d albums • %2$d tracks • %3$s</string>
+    <string name="play_all">Play All</string>
+    <string name="shuffle_artist">Shuffle Artist</string>
+    <string name="play_all_count">Play All (%1$d)</string>
+    <string name="shuffle_folder">Shuffle Folder</string>
+    <string name="folder_detail_meta">%1$d tracks • %2$s</string>
+    <string name="artist_item_meta">%1$d albums • %2$d tracks</string>
+    <string name="folder_item_meta">%1$d tracks • %2$s</string>
+
+    <!-- Folder Selection Dialog -->
+    <string name="folder_selection_title">Folders Selection</string>
+    <string name="folder_selection_desc">Choose folders containing your music files. Voice notes &amp; chat media (WhatsApp/Telegram) are automatically excluded.</string>
+    <string name="folder_selection_empty_title">No custom folders selected yet.</string>
+    <string name="folder_selection_empty_desc">By default, all storage is scanned while excluding chat audio and recordings. Tap below to limit scanning to your music folders.</string>
+    <string name="folder_selection_pick_btn">Select Folder or Storage</string>
+    <string name="folder_selection_min_error">Select at least 1 active music folder to scan.</string>
+    <string name="folder_selection_save_btn">Save and Scan</string>
+    <string name="folder_selection_remove">Remove</string>
+
+    <!-- List Options Dialog -->
+    <string name="list_options_dialog_title">List Options: %1$s</string>
+    <string name="list_options_sort_section">Sort</string>
+    <string name="list_options_reverse">Reverse</string>
+    <string name="list_options_layout_section">Layout</string>
+    <string name="list_options_layout_grid">Grid</string>
+    <string name="list_options_layout_list">List</string>
+    <string name="list_options_columns">Columns: %1$d</string>
+
+    <!-- Sort Types -->
+    <string name="sort_by_name">By title</string>
+    <string name="sort_by_artist">By artist</string>
+    <string name="sort_by_year">By year</string>
+    <string name="sort_by_date_added">By date added</string>
+    <string name="sort_by_track_count">By number of tracks</string>
+    <string name="sort_by_duration">By duration</string>
+
+    <!-- Shuffle Options Dialog -->
+    <string name="shuffle_options_title">Shuffle Options</string>
+    <string name="shuffle_spread_label">Artist spread: %1$d%%</string>
+    <string name="shuffle_pure_random">Pure random</string>
+    <string name="shuffle_even_spread">Even spread</string>
+    <string name="shuffle_spread_desc">The further right, the less often songs from the same artist play consecutively.</string>
+
+    <!-- Sleep Timer Dialog -->
+    <string name="sleep_timer_title_remaining">Sleep Timer: %1$s left</string>
+    <string name="sleep_timer_title_min_remaining">Sleep Timer: %1$d min left</string>
+    <string name="sleep_timer_title_set">Set Sleep Timer</string>
+    <string name="sleep_timer_minutes">%1$d minutes</string>
+    <string name="sleep_timer_turn_off">Turn Off Timer</string>
+
+    <!-- Search Dialog -->
+    <string name="search_placeholder">Search title, artist, album…</string>
+    <string name="search_results_count">%1$d results found</string>
+
+    <!-- Actions & Context Menus -->
+    <string name="action_play_next">Play Next</string>
+    <string name="action_add_to_queue">Add to Queue</string>
+    <string name="action_remove_from_queue">Remove from Queue</string>
+    <string name="action_rescan">Rescan</string>
+    <string name="action_change_album_art">Change Album Art (Gallery)</string>
+    <string name="action_pick_album_art">Album Art (Choose from Gallery)</string>
+    <string name="action_remove_custom_art">Remove Custom Art (Reset to Default)</string>
+    <string name="action_open_album">Open Album: %1$s</string>
+    <string name="action_open_artist">Open Artist: %1$s</string>
+    <string name="action_info_tags">Info / Tags</string>
+    <string name="track_options_tooltip">Track options</string>
+    <string name="close_selection">Close Selection</string>
+
+    <!-- Info / Tags Dialog -->
+    <string name="tag_title">Title</string>
+    <string name="tag_artist">Artist</string>
+    <string name="tag_album">Album</string>
+    <string name="tag_track">Track</string>
+    <string name="tag_year">Year</string>
+    <string name="tag_folder">Folder</string>
+
+    <!-- Now Playing -->
+    <string name="now_playing_no_track">No track playing</string>
+    <string name="now_playing_unknown_artist">Unknown artist</string>
+    <string name="now_playing_select_track">Select a song to play</string>
+    <string name="cue_badge">CUE</string>
+
+    <!-- Most Played -->
+    <string name="most_played_empty_title">No Play History Yet</string>
+    <string name="most_played_empty_desc">Tracks played past the threshold (default 50%%) will be automatically recorded and displayed here.</string>
+    <string name="most_played_times">★ %1$dx</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+
+    <!-- Settings: Language -->
+    <string name="settings_section_language">Language / Bahasa</string>
+    <string name="settings_language_title">App Language</string>
+    <string name="settings_language_desc">Select application display language</string>
+    <string name="settings_language_system">Follow System</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_id">Bahasa Indonesia</string>
+
+    <!-- Settings: Audio Engine -->
+    <string name="settings_section_audio">Audio Engine</string>
+    <string name="settings_gapless_title">Gapless Playback</string>
+    <string name="settings_gapless_desc">Seamless track transitions without silence gaps</string>
+    <string name="settings_replaygain_title">Volume Normalization (ReplayGain)</string>
+    <string name="settings_replaygain_desc">Automatically align audio loudness (ReplayGain / R128)</string>
+    <string name="settings_pause_headset_title">Pause on Headset Disconnect</string>
+    <string name="settings_pause_headset_desc">Automatically pause playback when wired headphones or Bluetooth disconnect</string>
+    <string name="settings_audio_focus_title">Audio Focus Handling</string>
+    <string name="settings_audio_focus_desc">Automatically lower volume or pause when receiving calls or notifications</string>
+
+    <!-- Settings: Library & Cache -->
+    <string name="settings_section_library">Library &amp; Database Cache</string>
+    <string name="settings_folders_title">Folders Selection</string>
+    <string name="settings_folders_default">Default (all music folders, ignoring WhatsApp &amp; recordings)</string>
+    <string name="settings_folders_active">%1$d active folders (%2$s)</string>
+    <string name="settings_db_title">Local Database Cache</string>
+    <string name="settings_db_tracks_cached">%1$d tracks stored in local cache</string>
+    <string name="settings_btn_rescan">Rescan</string>
+    <string name="settings_btn_reset_cache">Reset Cache</string>
+
+    <!-- Settings: Smart Shuffle -->
+    <string name="settings_section_shuffle">Smart Shuffle</string>
+    <string name="settings_shuffle_spread_title">Artist Spread</string>
+    <string name="settings_shuffle_spread_pure">Pure random (Fisher-Yates)</string>
+    <string name="settings_shuffle_spread_hint">Higher value reduces the likelihood of consecutive songs from the same artist.</string>
+
+    <!-- Settings: Display & Album Art -->
+    <string name="settings_section_appearance">Display &amp; Album Art</string>
+    <string name="settings_art_fit_title">Preserve Original Album Art Ratio (Fit)</string>
+    <string name="settings_art_fit_desc">Display cover artwork preserving its aspect ratio without cropping (Poweramp-style). Disable to fill the box (Crop).</string>
+
+    <!-- Settings: Queue Behavior -->
+    <string name="settings_section_queue">Queue &amp; Playback</string>
+    <string name="settings_keep_queue_title">Keep Playing in Same Queue</string>
+    <string name="settings_keep_queue_desc">Play tracks from lists or albums directly inside the active queue without resetting or clearing it (Poweramp-style).</string>
+
+    <!-- Settings: Playback Stats -->
+    <string name="settings_section_stats">Playback Statistics (Most Played)</string>
+    <string name="settings_threshold_title">Play Count Threshold</string>
+    <string name="settings_threshold_desc">A track is counted as played (+1) and added to \'Most Played\' after playing at least %1$d%% of its duration.</string>
+
+    <!-- Settings: About -->
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_app_name">Nitori Secret Lab Music Player</string>
+    <string name="settings_about_version">Version 1.0.5 • Offline Hi-Fi Music Player</string>
+    <string name="settings_about_desc">Focused on uncolored audiophile playback, flexible Up Next queue management, and instant, zero-lag performance.</string>
 </resources>

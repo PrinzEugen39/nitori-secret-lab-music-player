@@ -46,10 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.playback.PlaybackController
 import com.prinzeugen.nitorimusic.playback.PlaybackUiState
 import kotlin.math.abs
@@ -163,13 +165,13 @@ fun PowerampBottomBar(
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
-                                text = if (hasTrack) state.title else "Nitori Music Player",
+                                text = if (hasTrack) state.title else stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = if (hasTrack) state.artist else "Pilih lagu untuk memutar",
+                                text = if (hasTrack) state.artist else stringResource(R.string.now_playing_select_track),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -192,7 +194,7 @@ fun PowerampBottomBar(
                     ) {
                         Icon(
                             imageVector = if (state.isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            contentDescription = if (state.isPlaying) "Pause" else "Play",
+                            contentDescription = if (state.isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
                             tint = if (hasTrack) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(22.dp)
                         )
@@ -228,7 +230,7 @@ fun PowerampBottomBar(
                 IconButton(onClick = onLibraryClick) {
                     Icon(
                         imageVector = Icons.Rounded.GridView,
-                        contentDescription = "Library",
+                        contentDescription = stringResource(R.string.library),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -239,7 +241,7 @@ fun PowerampBottomBar(
                 }) {
                     Icon(
                         imageVector = Icons.Rounded.GraphicEq,
-                        contentDescription = "Now Playing",
+                        contentDescription = stringResource(R.string.now_playing),
                         tint = if (hasTrack) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
@@ -248,7 +250,7 @@ fun PowerampBottomBar(
                 IconButton(onClick = onOpenSearch) {
                     Icon(
                         imageVector = Icons.Rounded.Search,
-                        contentDescription = "Search",
+                        contentDescription = stringResource(R.string.search),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -257,7 +259,7 @@ fun PowerampBottomBar(
                 IconButton(onClick = onOpenQueue) {
                     Icon(
                         imageVector = Icons.Rounded.QueueMusic,
-                        contentDescription = "Queue",
+                        contentDescription = stringResource(R.string.queue),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -266,7 +268,7 @@ fun PowerampBottomBar(
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = Icons.Rounded.Settings,
-                        contentDescription = "Pengaturan",
+                        contentDescription = stringResource(R.string.settings),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

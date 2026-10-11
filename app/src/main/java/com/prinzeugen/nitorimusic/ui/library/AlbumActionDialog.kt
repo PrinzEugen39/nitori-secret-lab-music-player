@@ -29,9 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Album
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -120,7 +122,7 @@ fun AlbumActionDialog(
                 // Menu Items
                 AlbumActionItem(
                     icon = Icons.Rounded.SkipNext,
-                    label = "Play Next",
+                    label = stringResource(R.string.action_play_next),
                     onClick = {
                         onPlayNext()
                         onDismiss()
@@ -128,7 +130,7 @@ fun AlbumActionDialog(
                 )
                 AlbumActionItem(
                     icon = Icons.AutoMirrored.Rounded.QueueMusic,
-                    label = "Queue",
+                    label = stringResource(R.string.queue),
                     onClick = {
                         onAddToQueue()
                         onDismiss()
@@ -136,7 +138,7 @@ fun AlbumActionDialog(
                 )
                 AlbumActionItem(
                     icon = Icons.Rounded.Refresh,
-                    label = "Rescan",
+                    label = stringResource(R.string.action_rescan),
                     onClick = {
                         onRescan()
                         onDismiss()
@@ -144,7 +146,7 @@ fun AlbumActionDialog(
                 )
                 AlbumActionItem(
                     icon = Icons.Rounded.Image,
-                    label = if (hasCustomArt) "Ganti Album Art (Galeri)" else "Album Art (Pilih dari Galeri)",
+                    label = if (hasCustomArt) stringResource(R.string.action_change_album_art) else stringResource(R.string.action_pick_album_art),
                     onClick = {
                         onChangeAlbumArt()
                         onDismiss()
@@ -153,7 +155,7 @@ fun AlbumActionDialog(
                 if (hasCustomArt) {
                     AlbumActionItem(
                         icon = Icons.Rounded.Delete,
-                        label = "Hapus Custom Art (Kembali ke Default)",
+                        label = stringResource(R.string.action_remove_custom_art),
                         onClick = {
                             onRemoveCustomArt()
                             onDismiss()
@@ -162,7 +164,7 @@ fun AlbumActionDialog(
                 }
                 AlbumActionItem(
                     icon = Icons.Rounded.Tune,
-                    label = "List Options",
+                    label = stringResource(R.string.list_options_tooltip),
                     onClick = {
                         onListOptions()
                         onDismiss()

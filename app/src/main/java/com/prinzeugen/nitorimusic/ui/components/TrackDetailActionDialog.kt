@@ -46,10 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.playback.AudioSpecs
 import com.prinzeugen.nitorimusic.ui.formatTime
@@ -164,14 +166,14 @@ fun TrackDetailActionDialog(
                 // Action Menu Items Grid / List ala Poweramp
                 ActionRowItem(
                     icon = Icons.Rounded.Info,
-                    label = "Info / Tags",
+                    label = stringResource(R.string.action_info_tags),
                     onClick = { showInfoTagsDialog = true }
                 )
 
                 if (onGoToAlbum != null && track.albumId > 0) {
                     ActionRowItem(
                         icon = Icons.Rounded.Album,
-                        label = "Buka Album: ${track.album}",
+                        label = stringResource(R.string.action_open_album, track.album),
                         onClick = {
                             onDismiss()
                             onGoToAlbum(track.albumId)
@@ -182,7 +184,7 @@ fun TrackDetailActionDialog(
                 if (onGoToArtist != null && track.artist.isNotEmpty()) {
                     ActionRowItem(
                         icon = Icons.Rounded.Person,
-                        label = "Buka Artis: ${track.artist}",
+                        label = stringResource(R.string.action_open_artist, track.artist),
                         onClick = {
                             onDismiss()
                             onGoToArtist(track.artist)
@@ -193,7 +195,7 @@ fun TrackDetailActionDialog(
                 if (onChangeAlbumArt != null && track.albumId > 0) {
                     ActionRowItem(
                         icon = Icons.Rounded.Image,
-                        label = "Ganti Album Art...",
+                        label = stringResource(R.string.action_change_album_art),
                         onClick = {
                             pickImageLauncher.launch("image/*")
                         }
@@ -202,7 +204,7 @@ fun TrackDetailActionDialog(
 
                 ActionRowItem(
                     icon = Icons.Rounded.SkipNext,
-                    label = "Putar Selanjutnya (Play Next)",
+                    label = stringResource(R.string.action_play_next),
                     onClick = {
                         onDismiss()
                         onPlayNext()
@@ -212,7 +214,7 @@ fun TrackDetailActionDialog(
                 if (onRemoveFromQueue != null) {
                     ActionRowItem(
                         icon = Icons.Rounded.Delete,
-                        label = "Hapus dari Antrean",
+                        label = stringResource(R.string.action_remove_from_queue),
                         onClick = {
                             onDismiss()
                             onRemoveFromQueue()
@@ -221,7 +223,7 @@ fun TrackDetailActionDialog(
                 } else {
                     ActionRowItem(
                         icon = Icons.AutoMirrored.Rounded.QueueMusic,
-                        label = "Tambah ke Antrean",
+                        label = stringResource(R.string.action_add_to_queue),
                         onClick = {
                             onDismiss()
                             onAddToQueue()
@@ -296,12 +298,12 @@ fun TrackInfoTagsDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Info / Tags",
+                        text = stringResource(R.string.action_info_tags),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Tutup")
+                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.close))
                     }
                 }
 
@@ -360,18 +362,18 @@ fun TrackInfoTagsDialog(
                     Spacer(Modifier.height(12.dp))
 
                     // Field Grid Table
-                    DetailInfoRow(label = "Title", value = track.title)
-                    DetailInfoRow(label = "Artist", value = track.artist)
-                    DetailInfoRow(label = "Album", value = track.album)
-                    if (track.trackNo > 0) DetailInfoRow(label = "Track", value = track.trackNo.toString())
-                    if (track.year > 0) DetailInfoRow(label = "Year", value = track.year.toString())
-                    if (track.folderPath.isNotEmpty()) DetailInfoRow(label = "Folder", value = track.folderPath)
+                    DetailInfoRow(label = stringResource(R.string.tag_title), value = track.title)
+                    DetailInfoRow(label = stringResource(R.string.tag_artist), value = track.artist)
+                    DetailInfoRow(label = stringResource(R.string.tag_album), value = track.album)
+                    if (track.trackNo > 0) DetailInfoRow(label = stringResource(R.string.tag_track), value = track.trackNo.toString())
+                    if (track.year > 0) DetailInfoRow(label = stringResource(R.string.tag_year), value = track.year.toString())
+                    if (track.folderPath.isNotEmpty()) DetailInfoRow(label = stringResource(R.string.tag_folder), value = track.folderPath)
                 }
 
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) {
-                        Text("Tutup", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.close), fontWeight = FontWeight.Bold)
                     }
                 }
             }

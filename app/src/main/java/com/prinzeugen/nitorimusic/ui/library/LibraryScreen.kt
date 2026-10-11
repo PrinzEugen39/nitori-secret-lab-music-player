@@ -48,6 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.LibraryTab
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.PowerampBottomBar
@@ -101,9 +103,11 @@ fun LibraryScreen(
     }
 
     if (showListOptions) {
+        val albumsTitle = stringResource(R.string.tab_albums)
+        val tracksTitle = stringResource(R.string.tab_tracks)
         val (title, currentOptions, onSave) = when (currentTab) {
-            LibraryTab.ALBUMS -> Triple("Albums", albumsOptions, viewModel::setAlbumsOptions)
-            else -> Triple("Tracks", tracksOptions, viewModel::setTracksOptions)
+            LibraryTab.ALBUMS -> Triple(albumsTitle, albumsOptions, viewModel::setAlbumsOptions)
+            else -> Triple(tracksTitle, tracksOptions, viewModel::setTracksOptions)
         }
         ListOptionsDialog(
             title = title,
@@ -150,7 +154,7 @@ fun LibraryScreen(
                 Column(Modifier.fillMaxSize()) {
                     if (!hasPermission) {
                         Text(
-                            "Izin akses audio dibutuhkan untuk membaca library.",
+                            stringResource(R.string.permission_audio_required),
                             modifier = Modifier
                                 .statusBarsPadding()
                                 .padding(24.dp),
@@ -169,7 +173,7 @@ fun LibraryScreen(
                                 Tab(
                                     selected = currentTab == tab,
                                     onClick = { viewModel.selectTab(tab) },
-                                    text = { Text(tab.label) }
+                                    text = { Text(stringResource(tab.labelRes)) }
                                 )
                             }
                         }
@@ -183,11 +187,11 @@ fun LibraryScreen(
                         val totalSizeStr = formatBytes(viewModel.getTotalTracksSize())
 
                         val countLabel = when (currentTab) {
-                            LibraryTab.ALBUMS -> "${albums.size} album • $totalSizeStr"
-                            LibraryTab.TRACKS -> "${sortedTracks.size} lagu • $totalSizeStr"
-                            LibraryTab.ARTISTS -> "${artists.size} artis • $totalSizeStr"
-                            LibraryTab.MOST_PLAYED -> "${mostPlayed.size} lagu sering diputar"
-                            LibraryTab.FOLDERS -> "${folders.size} folder • $totalSizeStr"
+                            LibraryTab.ALBUMS -> stringResource(R.string.header_albums_count, albums.size, totalSizeStr)
+                            LibraryTab.TRACKS -> stringResource(R.string.header_tracks_count, sortedTracks.size, totalSizeStr)
+                            LibraryTab.ARTISTS -> stringResource(R.string.header_artists_count, artists.size, totalSizeStr)
+                            LibraryTab.MOST_PLAYED -> stringResource(R.string.header_most_played_count, mostPlayed.size)
+                            LibraryTab.FOLDERS -> stringResource(R.string.header_folders_count, folders.size, totalSizeStr)
                         }
 
                         Row(
@@ -202,18 +206,18 @@ fun LibraryScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 if (currentTab == LibraryTab.ALBUMS || currentTab == LibraryTab.TRACKS) {
                                     IconButton(onClick = { showListOptions = true }) {
-                                        Icon(Icons.Rounded.Tune, contentDescription = "List Options")
+                                        Icon(Icons.Rounded.Tune, contentDescription = stringResource(R.string.list_options_tooltip))
                                     }
                                 }
 
                                 if (currentTab == LibraryTab.FOLDERS) {
                                     IconButton(onClick = { showFolderSelection = true }) {
-                                        Icon(Icons.Rounded.FolderOpen, contentDescription = "Folders Selection")
+                                        Icon(Icons.Rounded.FolderOpen, contentDescription = stringResource(R.string.folder_selection_tooltip))
                                     }
                                 }
 
                                 IconButton(onClick = { viewModel.refreshLibrary(forceSync = true) }) {
-                                    Icon(Icons.Rounded.Refresh, contentDescription = "Pindai Ulang Library")
+                                    Icon(Icons.Rounded.Refresh, contentDescription = stringResource(R.string.rescan_library_tooltip))
                                 }
 
                                 Button(
@@ -229,7 +233,7 @@ fun LibraryScreen(
                                 ) {
                                     Icon(Icons.Rounded.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))
-                                    Text("Shuffle all")
+                                    Text(stringResource(R.string.shuffle_all))
                                 }
                             }
                         }
@@ -258,7 +262,7 @@ fun LibraryScreen(
                                     )
                                     Spacer(Modifier.width(10.dp))
                                     Text(
-                                        text = scanStatus ?: "Menyinkronkan pustaka musik...",
+                                        text = scanStatus ?: stringResource(R.string.scan_syncing_library),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
@@ -293,13 +297,13 @@ fun LibraryScreen(
                                             )
                                             Spacer(Modifier.height(16.dp))
                                             Text(
-                                                "Pilih Folder Musik",
+                                                stringResource(R.string.onboarding_select_folders_title),
                                                 style = MaterialTheme.typography.titleLarge,
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Spacer(Modifier.height(8.dp))
                                             Text(
-                                                "Tentukan folder koleksi musik Anda (seperti Music) untuk pemindaian kilat ala Poweramp dan otomatis mengabaikan audio chat/rekaman.",
+                                                stringResource(R.string.onboarding_select_folders_desc),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 textAlign = TextAlign.Center
@@ -315,7 +319,7 @@ fun LibraryScreen(
                                                     modifier = Modifier.size(18.dp)
                                                 )
                                                 Spacer(Modifier.width(8.dp))
-                                                Text("Pilih Folder Musik")
+                                                Text(stringResource(R.string.onboarding_select_folders_btn))
                                             }
                                         }
                                     }

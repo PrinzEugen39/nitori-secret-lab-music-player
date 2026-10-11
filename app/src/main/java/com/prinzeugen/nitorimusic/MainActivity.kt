@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -20,16 +21,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import com.prinzeugen.nitorimusic.ui.AppRoot
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.theme.NitoriMusicTheme
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -60,76 +66,109 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            NitoriMusicTheme {
-                val context = LocalContext.current
-                var granted by remember {
-                    mutableStateOf(
-                        ContextCompat.checkSelfPermission(this, audioPermission) ==
-                            PackageManager.PERMISSION_GRANTED
-                    )
-                }
-                var showAllFilesDialog by remember {
-                    mutableStateOf(
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()
-                    )
-                }
+            val appLanguage by viewModel.appLanguage.collectAsState()
+            val baseContext = LocalContext.current
+            val baseConfig = LocalConfiguration.current
 
-                val launcher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.RequestMultiplePermissions()
-                ) { result ->
-                    granted = result[audioPermission] == true
-                    if (granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
-                        showAllFilesDialog = true
+            val targetLocale = remember(appLanguage) {
+                when (appLanguage) {
+                    "en" -> Locale.ENGLISH
+                    "in" -> Locale("in")
+                    else -> null
+                }
+            }
+
+            val localizedConfiguration = remember(targetLocale, baseConfig) {
+                Configuration(baseConfig).apply {
+                    if (targetLocale != null) {
+                        setLocale(targetLocale)
                     }
                 }
+            }
 
-                LaunchedEffect(Unit) {
-                    val perms = buildList {
-                        add(audioPermission)
-                        if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
+            val localizedContext = remember(targetLocale, baseContext) {
+                if (targetLocale != null) {
+                    val config = Configuration(baseContext.resources.configuration)
+                    config.setLocale(targetLocale)
+                    baseContext.createConfigurationContext(config)
+                } else {
+                    baseContext
+                }
+            }
+
+            CompositionLocalProvider(
+                LocalConfiguration provides localizedConfiguration,
+                LocalContext provides localizedContext
+            ) {
+                NitoriMusicTheme {
+                    val context = LocalContext.current
+                    var granted by remember {
+                        mutableStateOf(
+                            ContextCompat.checkSelfPermission(this@MainActivity, audioPermission) ==
+                                PackageManager.PERMISSION_GRANTED
+                        )
                     }
-                    launcher.launch(perms.toTypedArray())
-                }
+                    var showAllFilesDialog by remember {
+                        mutableStateOf(
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()
+                        )
+                    }
 
-                LaunchedEffect(granted) {
-                    if (granted) viewModel.ensureLibraryLoaded()
-                }
-
-                if (showAllFilesDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    AlertDialog(
-                        onDismissRequest = { showAllFilesDialog = false },
-                        title = { Text("Izin Akses File untuk CUE Sheet") },
-                        text = {
-                            Text(
-                                "Agar aplikasi dapat mendeteksi file .cue (CUE Sheet) dan membagi album menjadi lagu terpisah (seperti di Poweramp), izin Akses Semua File diperlukan.\n\nBuka Pengaturan untuk mengaktifkan izin?"
-                            )
-                        },
-                        confirmButton = {
-                            Button(onClick = {
-                                showAllFilesDialog = false
-                                try {
-                                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                                        data = Uri.parse("package:${context.packageName}")
-                                    }
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                                    context.startActivity(intent)
-                                }
-                            }) {
-                                Text("Buka Pengaturan")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showAllFilesDialog = false }) {
-                                Text("Nanti Saja")
-                            }
+                    val launcher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestMultiplePermissions()
+                    ) { result ->
+                        granted = result[audioPermission] == true
+                        if (granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+                            showAllFilesDialog = true
                         }
-                    )
-                }
+                    }
 
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    AppRoot(viewModel, hasPermission = granted)
+                    LaunchedEffect(Unit) {
+                        val perms = buildList {
+                            add(audioPermission)
+                            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        launcher.launch(perms.toTypedArray())
+                    }
+
+                    LaunchedEffect(granted) {
+                        if (granted) viewModel.ensureLibraryLoaded()
+                    }
+
+                    if (showAllFilesDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        AlertDialog(
+                            onDismissRequest = { showAllFilesDialog = false },
+                            title = { Text(stringResource(R.string.cue_permission_dialog_title)) },
+                            text = {
+                                Text(stringResource(R.string.cue_permission_dialog_msg))
+                            },
+                            confirmButton = {
+                                Button(onClick = {
+                                    showAllFilesDialog = false
+                                    try {
+                                        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                                            data = Uri.parse("package:${context.packageName}")
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                                        context.startActivity(intent)
+                                    }
+                                }) {
+                                    Text(stringResource(R.string.cue_permission_open_settings))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showAllFilesDialog = false }) {
+                                    Text(stringResource(R.string.cue_permission_later))
+                                }
+                            }
+                        )
+                    }
+
+                    Surface(color = MaterialTheme.colorScheme.background) {
+                        AppRoot(viewModel, hasPermission = granted)
+                    }
                 }
             }
         }

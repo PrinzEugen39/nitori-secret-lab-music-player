@@ -14,7 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Track
 
 @Composable
@@ -48,7 +50,7 @@ fun TrackMoreOptionsButton(
         ) {
             Icon(
                 imageVector = Icons.Rounded.MoreVert,
-                contentDescription = "Opsi lagu",
+                contentDescription = stringResource(R.string.track_options_tooltip),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

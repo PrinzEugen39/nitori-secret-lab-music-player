@@ -42,10 +42,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.playback.QueueItem
 import com.prinzeugen.nitorimusic.ui.MainViewModel
@@ -113,9 +115,9 @@ fun QueueScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
             }
-            Text("Up next (${state.queue.size})", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.up_next, state.queue.size), style = MaterialTheme.typography.titleMedium)
         }
         LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
             itemsIndexed(state.queue, key = { _, item -> item.mediaId }) { index, item ->
@@ -215,7 +217,7 @@ private fun ReorderableCollectionItemScope.QueueRow(
                 }
                 Icon(
                     imageVector = Icons.Rounded.DragHandle,
-                    contentDescription = "Drag to reorder",
+                    contentDescription = stringResource(R.string.drag_to_reorder),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .draggableHandle()

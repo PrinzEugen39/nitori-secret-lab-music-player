@@ -41,8 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Album
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -95,12 +97,12 @@ fun AlbumDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBack, contentDescription = "Back to Albums")
+                Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back_to_albums))
             }
-            Text("Albums", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.album_detail_title), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { showAlbumDialog = true }) {
-                Icon(Icons.Rounded.MoreVert, contentDescription = "Album Menu")
+                Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.album_menu_tooltip))
             }
         }
 
@@ -135,7 +137,7 @@ fun AlbumDetailScreen(
                 val albumTotalSize = com.prinzeugen.nitorimusic.ui.formatBytes(tracks.sumOf { it.sizeBytes })
                 val meta = buildString {
                     if (album.year > 0) append("${album.year} • ")
-                    append("${album.trackCount} lagu • $albumTotalSize")
+                    append(stringResource(R.string.album_detail_meta, album.trackCount, albumTotalSize))
                 }
                 Text(
                     meta,
@@ -151,7 +153,7 @@ fun AlbumDetailScreen(
                     ) {
                         Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Play")
+                        Text(stringResource(R.string.play))
                     }
                     OutlinedButton(
                         onClick = { viewModel.shuffleTracks(tracks) },
@@ -160,7 +162,7 @@ fun AlbumDetailScreen(
                     ) {
                         Icon(Icons.Rounded.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Shuffle")
+                        Text(stringResource(R.string.shuffle))
                     }
                 }
             }

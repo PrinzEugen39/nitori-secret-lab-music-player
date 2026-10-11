@@ -57,9 +57,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Album
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import com.prinzeugen.nitorimusic.ui.MainViewModel
@@ -269,7 +271,7 @@ fun AlbumsTabContent(
                             }
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "All",
+                                stringResource(R.string.all),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
@@ -290,7 +292,7 @@ fun AlbumsTabContent(
                             },
                             modifier = Modifier.size(32.dp)
                         ) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Close Selection")
+                            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.close_selection))
                         }
                     }
 
@@ -307,7 +309,7 @@ fun AlbumsTabContent(
                         // Queue Action
                         SelectionActionButton(
                             icon = Icons.AutoMirrored.Rounded.QueueMusic,
-                            label = "Queue",
+                            label = stringResource(R.string.queue),
                             enabled = selectedAlbumIds.isNotEmpty(),
                             onClick = {
                                 viewModel.addAlbumsToQueue(selectedAlbumIds)
@@ -319,7 +321,7 @@ fun AlbumsTabContent(
                         // Play Next Action
                         SelectionActionButton(
                             icon = Icons.Rounded.SkipNext,
-                            label = "Play Next",
+                            label = stringResource(R.string.action_play_next),
                             enabled = selectedAlbumIds.isNotEmpty(),
                             onClick = {
                                 viewModel.playNextAlbums(selectedAlbumIds)
@@ -332,7 +334,7 @@ fun AlbumsTabContent(
                         val canChangeImage = selectedAlbumIds.size == 1
                         SelectionActionButton(
                             icon = Icons.Rounded.Image,
-                            label = "Image",
+                            label = stringResource(R.string.image),
                             enabled = canChangeImage,
                             onClick = {
                                 val albumId = selectedAlbumIds.firstOrNull()
@@ -437,7 +439,7 @@ private fun AlbumGridItem(
                 ) {
                     Icon(
                         Icons.Rounded.MoreVert,
-                        contentDescription = "Album Menu",
+                        contentDescription = stringResource(R.string.album_menu_tooltip),
                         tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
@@ -558,7 +560,7 @@ private fun AlbumListItem(
             ) {
                 Icon(
                     Icons.Rounded.MoreVert,
-                    contentDescription = "Album Menu",
+                    contentDescription = stringResource(R.string.album_menu_tooltip),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )

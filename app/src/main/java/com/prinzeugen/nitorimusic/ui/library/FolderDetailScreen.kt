@@ -33,9 +33,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Folder
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
@@ -64,7 +66,7 @@ fun FolderDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBack, contentDescription = "Kembali")
+                Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
@@ -83,7 +85,11 @@ fun FolderDetailScreen(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "${tracks.size} lagu • ${com.prinzeugen.nitorimusic.ui.formatBytes(tracks.sumOf { it.sizeBytes })}",
+                    stringResource(
+                        R.string.folder_detail_meta,
+                        tracks.size,
+                        com.prinzeugen.nitorimusic.ui.formatBytes(tracks.sumOf { it.sizeBytes })
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -105,7 +111,7 @@ fun FolderDetailScreen(
             ) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Putar Semua (${tracks.size})")
+                Text(stringResource(R.string.play_all_count, tracks.size))
             }
 
             OutlinedButton(
@@ -115,7 +121,7 @@ fun FolderDetailScreen(
             ) {
                 Icon(Icons.Rounded.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Acak Folder")
+                Text(stringResource(R.string.shuffle_folder))
             }
         }
 

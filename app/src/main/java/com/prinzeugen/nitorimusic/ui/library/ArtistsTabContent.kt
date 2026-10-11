@@ -17,8 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.domain.model.Artist
 import com.prinzeugen.nitorimusic.ui.components.FastAlphabetScroller
 import kotlinx.coroutines.launch
@@ -53,7 +55,7 @@ fun ArtistsTabContent(
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            "${artist.albumCount} album • ${artist.trackCount} lagu",
+                            stringResource(R.string.artist_item_meta, artist.albumCount, artist.trackCount),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

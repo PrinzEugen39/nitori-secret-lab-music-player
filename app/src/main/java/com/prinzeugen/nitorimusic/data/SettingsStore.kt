@@ -46,6 +46,14 @@ class SettingsStore(private val context: Context) {
     private val albumArtFitModeKey = booleanPreferencesKey("album_art_fit_mode")
     private val keepQueueOnPlayKey = booleanPreferencesKey("keep_queue_on_play")
     private val countAsPlayedThresholdKey = intPreferencesKey("count_as_played_threshold")
+    private val appLanguageKey = stringPreferencesKey("app_language")
+
+    val appLanguage: Flow<String> =
+        context.dataStore.data.map { it[appLanguageKey] ?: "system" }
+
+    suspend fun setAppLanguage(languageCode: String) {
+        context.dataStore.edit { it[appLanguageKey] = languageCode }
+    }
 
     val selectedMusicFolders: Flow<List<MusicFolder>> =
         context.dataStore.data.map { prefs ->
