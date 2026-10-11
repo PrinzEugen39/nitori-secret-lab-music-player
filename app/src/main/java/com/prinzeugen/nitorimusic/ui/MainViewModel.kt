@@ -15,11 +15,13 @@ import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import com.prinzeugen.nitorimusic.domain.shuffle.SmartShuffle
 import com.prinzeugen.nitorimusic.playback.PlaybackController
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -56,6 +58,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val replayGainEnabled: StateFlow<Boolean> = settings.replayGainEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    val albumArtFitMode: StateFlow<Boolean> = settings.albumArtFitMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val keepQueueOnPlay: StateFlow<Boolean> = settings.keepQueueOnPlay
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val countAsPlayedThreshold: StateFlow<Int> = settings.countAsPlayedThreshold
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 50)
+
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
 
@@ -71,6 +82,37 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         playback.connect()
+        observePlayCountTracking()
+    }
+
+    private fun observePlayCountTracking() {
+        var lastMediaId: String? = null
+        var hasCountedCurrent = false
+
+        viewModelScope.launch {
+            while (isActive) {
+                delay(1000)
+                val state = playback.state.value
+                val currentMediaId = state.currentMediaId
+                if (currentMediaId != lastMediaId) {
+                    lastMediaId = currentMediaId
+                    hasCountedCurrent = false
+                }
+
+                if (!hasCountedCurrent && state.isPlaying && currentMediaId != null) {
+                    val tId = currentMediaId.toLongOrNull()
+                    val dur = state.durationMs
+                    val pos = playback.positionMs()
+                    val thresholdPercent = countAsPlayedThreshold.value
+                    if (dur > 0 && pos >= (dur * thresholdPercent / 100)) {
+                        hasCountedCurrent = true
+                        if (tId != null) {
+                            incrementPlayCount(tId)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun selectTab(tab: LibraryTab) {
@@ -160,6 +202,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setReplayGainEnabled(enabled) }
     }
 
+    fun setAlbumArtFitMode(enabled: Boolean) {
+        viewModelScope.launch { settings.setAlbumArtFitMode(enabled) }
+    }
+
+    fun setKeepQueueOnPlay(enabled: Boolean) {
+        viewModelScope.launch { settings.setKeepQueueOnPlay(enabled) }
+    }
+
+    fun setCountAsPlayedThreshold(threshold: Int) {
+        viewModelScope.launch { settings.setCountAsPlayedThreshold(threshold) }
+    }
+
     fun setAlbumsOptions(options: ListOptions) {
         viewModelScope.launch { settings.setAlbumsOptions(options) }
     }
@@ -168,10 +222,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setTracksOptions(options) }
     }
 
-    fun play(index: Int) = playback.playAll(sortedTracks(), index)
+    fun play(index: Int) {
+        val tracks = sortedTracks()
+        val targetTrack = tracks.getOrNull(index) ?: return
+        if (keepQueueOnPlay.value && playback.state.value.queue.isNotEmpty()) {
+            playback.playTrackInQueueOrInsert(targetTrack)
+        } else {
+            playback.playAll(tracks, index)
+        }
+    }
 
     fun playTracks(trackList: List<Track>, startIndex: Int = 0) {
-        playback.playAll(trackList, startIndex)
+        val targetTrack = trackList.getOrNull(startIndex) ?: return
+        if (keepQueueOnPlay.value && playback.state.value.queue.isNotEmpty()) {
+            playback.playTrackInQueueOrInsert(targetTrack)
+        } else {
+            playback.playAll(trackList, startIndex)
+        }
+    }
+
+    fun incrementPlayCount(trackId: Long) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            repository.incrementPlayCount(trackId, now)
+            _tracks.value = _tracks.value.map {
+                if (it.id == trackId) it.copy(playCount = it.playCount + 1, lastPlayedMs = now)
+                else it
+            }
+        }
+    }
+
+    fun getMostPlayedTracks(): List<Track> {
+        return _tracks.value
+            .filter { it.playCount > 0 }
+            .sortedWith(compareByDescending<Track> { it.playCount }.thenByDescending { it.lastPlayedMs })
+    }
+
+    fun getTotalTracksSize(tracks: List<Track> = _tracks.value): Long {
+        return tracks.sumOf { it.sizeBytes }
     }
 
     fun shuffleTracks(trackList: List<Track>) {

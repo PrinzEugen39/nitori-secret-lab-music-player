@@ -104,6 +104,27 @@ class PlaybackController(private val context: Context) {
         c.addMediaItem(insertIndex, track.toMediaItem())
     }
 
+    /**
+     * Memainkan lagu dalam antrean yang sama:
+     * Jika lagu sudah ada di queue, lompat langsung ke index tersebut.
+     * Jika belum ada, masukkan lagu tepat setelah lagu yang sedang berputar lalu mainkan,
+     * tanpa mereset atau menghapus antrean yang sedang aktif.
+     */
+    fun playTrackInQueueOrInsert(track: Track) {
+        val c = controller ?: return
+        val currentQueue = _state.value.queue
+        val existingIndex = currentQueue.indexOfFirst { it.trackId == track.id }
+        if (existingIndex >= 0) {
+            c.seekToDefaultPosition(existingIndex)
+            c.play()
+        } else {
+            val insertIndex = if (c.mediaItemCount == 0) 0 else c.currentMediaItemIndex + 1
+            c.addMediaItem(insertIndex, track.toMediaItem())
+            c.seekToDefaultPosition(insertIndex)
+            c.play()
+        }
+    }
+
     fun playNext(tracks: List<Track>) {
         val c = controller ?: return
         if (tracks.isEmpty()) return

@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +85,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
     var showTrackDetail by remember { mutableStateOf(false) }
     var dominantColor by remember { mutableStateOf(Color.Transparent) }
 
+    val albumArtFitMode by viewModel.albumArtFitMode.collectAsState()
     val allTracks by viewModel.tracks.collectAsState()
     val currentTrack = remember(state.currentMediaId, allTracks) {
         val tId = state.currentMediaId?.toLongOrNull()
@@ -275,6 +277,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                         val item = queue.getOrNull(page)
                         ArtworkImage(
                             trackId = item?.trackId,
+                            contentScale = if (albumArtFitMode) ContentScale.Fit else ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(16.dp))
@@ -288,6 +291,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 } else {
                     ArtworkImage(
                         trackId = trackId,
+                        contentScale = if (albumArtFitMode) ContentScale.Fit else ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(16.dp))
@@ -367,6 +371,25 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                         contentDescription = "Sleep Timer",
                         tint = if (state.sleepTimerSecondsLeft > 0) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Queue Position Pill ala Poweramp (Ketuk untuk langsung buka Antrean / Queue)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onOpenQueue() }
+                ) {
+                    Text(
+                        text = "${(state.currentIndex + 1).coerceAtLeast(1)} / ${queue.size.coerceAtLeast(1)}",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
 

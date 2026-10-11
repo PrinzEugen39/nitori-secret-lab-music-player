@@ -82,6 +82,12 @@ fun FolderDetailScreen(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Text(
+                    "${tracks.size} lagu • ${com.prinzeugen.nitorimusic.ui.formatBytes(tracks.sumOf { it.sizeBytes })}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
 

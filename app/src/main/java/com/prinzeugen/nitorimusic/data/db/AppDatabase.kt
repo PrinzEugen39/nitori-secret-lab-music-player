@@ -14,7 +14,7 @@ import com.prinzeugen.nitorimusic.data.db.entity.TrackEntity
         SavedQueueItem::class,
         TrackEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

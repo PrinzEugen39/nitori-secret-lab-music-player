@@ -76,7 +76,7 @@ fun ArtistDetailScreen(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "${artist.albumCount} album • ${tracks.size} lagu",
+                    "${artist.albumCount} album • ${tracks.size} lagu • ${com.prinzeugen.nitorimusic.ui.formatBytes(tracks.sumOf { it.sizeBytes })}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

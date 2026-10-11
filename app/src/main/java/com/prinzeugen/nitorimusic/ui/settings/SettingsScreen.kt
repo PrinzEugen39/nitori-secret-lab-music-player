@@ -17,14 +17,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,6 +63,9 @@ fun SettingsScreen(
     val gapless by viewModel.gaplessEnabled.collectAsState()
     val replayGain by viewModel.replayGainEnabled.collectAsState()
     val spread by viewModel.shuffleSpread.collectAsState()
+    val albumArtFitMode by viewModel.albumArtFitMode.collectAsState()
+    val keepQueueOnPlay by viewModel.keepQueueOnPlay.collectAsState()
+    val countThreshold by viewModel.countAsPlayedThreshold.collectAsState()
 
     val scrollState = rememberScrollState()
 
@@ -238,7 +244,80 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Section 4: Tentang ---
+            // --- Section 4: Tampilan & Sampul Album (Now Playing UX) ---
+            SectionHeader(icon = Icons.Rounded.Image, title = "Tampilan & Sampul Album")
+
+            SettingSwitchRow(
+                title = "Pertahankan Rasio Asli Cover Art (Fit)",
+                subtitle = "Menampilkan gambar sampul sesuai proporsinya tanpa terpotong (ala Poweramp). Nonaktifkan untuk mengisi penuh kotak (Crop).",
+                checked = albumArtFitMode,
+                onCheckedChange = viewModel::setAlbumArtFitMode
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- Section 5: Antrean & Pemutaran (Queue Behavior) ---
+            SectionHeader(icon = Icons.AutoMirrored.Rounded.QueueMusic, title = "Antrean & Pemutaran")
+
+            SettingSwitchRow(
+                title = "Lanjut Mainkan di Antrean yang Sama",
+                subtitle = "Memutar lagu dari daftar/album langsung di dalam antrean aktif tanpa mereset atau membuat antrean baru (ala Poweramp).",
+                checked = keepQueueOnPlay,
+                onCheckedChange = viewModel::setKeepQueueOnPlay
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- Section 6: Statistik Lagu (Most Played) ---
+            SectionHeader(icon = Icons.Rounded.Whatshot, title = "Statistik Pemutaran (Most Played)")
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "Batas Hitung Lagu Diputar",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "$countThreshold%",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Text(
+                        "Lagu akan dihitung telah diputar (+1) dan masuk ke tab 'Most Played' setelah dimainkan minimal $countThreshold% dari total durasinya.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    Slider(
+                        value = countThreshold.toFloat(),
+                        onValueChange = { viewModel.setCountAsPlayedThreshold(it.toInt()) },
+                        valueRange = 10f..100f,
+                        steps = 8,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- Section 7: Tentang ---
             SectionHeader(icon = Icons.Rounded.Info, title = "Tentang")
 
             Card(

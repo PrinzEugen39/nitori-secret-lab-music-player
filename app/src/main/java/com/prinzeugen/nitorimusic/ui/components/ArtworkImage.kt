@@ -35,6 +35,7 @@ fun ArtworkImage(
     albumId: Long? = null,
     modifier: Modifier = Modifier,
     sizePx: Int = 600,
+    contentScale: ContentScale = ContentScale.Crop,
 ) {
     val context = LocalContext.current
     val revision by CustomArtworkManager.revision.collectAsState()
@@ -57,7 +58,7 @@ fun ArtworkImage(
             Image(
                 bitmap = it,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 modifier = Modifier.fillMaxSize()
             )
         } ?: Text("♪", style = MaterialTheme.typography.headlineMedium)

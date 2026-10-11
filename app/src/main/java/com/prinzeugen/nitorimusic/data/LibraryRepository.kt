@@ -44,10 +44,14 @@ class LibraryRepository(private val context: Context) {
             MediaStore.Audio.Media.YEAR,
             MediaStore.Audio.Media.DATE_ADDED,
             MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.SIZE,
         )
         val selection =
             "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} > 0"
         val sort = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
+
+        // Simpan statistik pemutaran yang sudah ada agar tidak hilang saat re-sync
+        val existingStats = trackDao.getAllTracks().associate { it.id to Pair(it.playCount, it.lastPlayedMs) }
 
         val tracks = mutableListOf<Track>()
         context.contentResolver.query(collection, projection, selection, null, sort)?.use { c ->
@@ -61,6 +65,7 @@ class LibraryRepository(private val context: Context) {
             val yearCol = c.getColumnIndex(MediaStore.Audio.Media.YEAR)
             val dateAddedCol = c.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED)
             val dataCol = c.getColumnIndex(MediaStore.Audio.Media.DATA)
+            val sizeCol = c.getColumnIndex(MediaStore.Audio.Media.SIZE)
 
             while (c.moveToNext()) {
                 val id = c.getLong(idCol)
@@ -68,6 +73,8 @@ class LibraryRepository(private val context: Context) {
                 val folder = if (rawPath.contains("/")) rawPath.substringBeforeLast("/") else ""
                 val rawTrackNo = if (trackCol >= 0) c.getInt(trackCol) else 0
                 val trackNo = if (rawTrackNo >= 1000) rawTrackNo % 1000 else rawTrackNo
+                val sizeBytes = if (sizeCol >= 0) c.getLong(sizeCol) else 0L
+                val stat = existingStats[id]
 
                 tracks += Track(
                     id = id,
@@ -81,6 +88,9 @@ class LibraryRepository(private val context: Context) {
                     year = if (yearCol >= 0) c.getInt(yearCol) else 0,
                     dateAddedSec = if (dateAddedCol >= 0) c.getLong(dateAddedCol) else 0L,
                     folderPath = folder,
+                    sizeBytes = sizeBytes,
+                    playCount = stat?.first ?: 0,
+                    lastPlayedMs = stat?.second ?: 0L,
                 )
             }
         }
@@ -90,6 +100,16 @@ class LibraryRepository(private val context: Context) {
         trackDao.replaceAll(entities)
 
         tracks
+    }
+
+    /** Menambah hitungan berapa kali lagu telah diputar selesai */
+    suspend fun incrementPlayCount(trackId: Long, timestamp: Long) = withContext(Dispatchers.IO) {
+        trackDao.incrementPlayCount(trackId, timestamp)
+    }
+
+    /** Mengambil lagu yang paling sering diputar */
+    suspend fun getMostPlayedTracks(): List<Track> = withContext(Dispatchers.IO) {
+        trackDao.getMostPlayedTracks().map { it.toDomain() }
     }
 
     /** Menghapus seluruh cache metadata lagu. */

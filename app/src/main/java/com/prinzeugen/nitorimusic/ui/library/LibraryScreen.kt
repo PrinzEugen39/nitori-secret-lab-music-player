@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.prinzeugen.nitorimusic.domain.model.LibraryTab
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.PowerampBottomBar
+import com.prinzeugen.nitorimusic.ui.formatBytes
 
 @Composable
 fun LibraryScreen(
@@ -141,12 +142,15 @@ fun LibraryScreen(
                         val albums = viewModel.getAlbums()
                         val artists = viewModel.getArtists()
                         val folders = viewModel.getFolders()
+                        val mostPlayed = viewModel.getMostPlayedTracks()
+                        val totalSizeStr = formatBytes(viewModel.getTotalTracksSize())
 
                         val countLabel = when (currentTab) {
-                            LibraryTab.ALBUMS -> "${albums.size} albums"
-                            LibraryTab.TRACKS -> "${sortedTracks.size} lagu"
-                            LibraryTab.ARTISTS -> "${artists.size} artists"
-                            LibraryTab.FOLDERS -> "${folders.size} folders"
+                            LibraryTab.ALBUMS -> "${albums.size} album • $totalSizeStr"
+                            LibraryTab.TRACKS -> "${sortedTracks.size} lagu • $totalSizeStr"
+                            LibraryTab.ARTISTS -> "${artists.size} artis • $totalSizeStr"
+                            LibraryTab.MOST_PLAYED -> "${mostPlayed.size} lagu sering diputar"
+                            LibraryTab.FOLDERS -> "${folders.size} folder • $totalSizeStr"
                         }
 
                         Row(
@@ -166,7 +170,13 @@ fun LibraryScreen(
                                 }
 
                                 Button(
-                                    onClick = viewModel::shuffleAll,
+                                    onClick = {
+                                        if (currentTab == LibraryTab.MOST_PLAYED && mostPlayed.isNotEmpty()) {
+                                            viewModel.shuffleTracks(mostPlayed)
+                                        } else {
+                                            viewModel.shuffleAll()
+                                        }
+                                    },
                                     enabled = tracks.isNotEmpty(),
                                     modifier = Modifier.padding(start = 4.dp)
                                 ) {
@@ -208,6 +218,18 @@ fun LibraryScreen(
                                         ArtistsTabContent(
                                             artists = artists,
                                             onArtistClick = viewModel::openArtist,
+                                        )
+                                    }
+                                    LibraryTab.MOST_PLAYED -> {
+                                        MostPlayedTabContent(
+                                            tracks = mostPlayed,
+                                            currentMediaId = playback.currentMediaId,
+                                            viewModel = viewModel,
+                                            onTrackClick = { idx ->
+                                                viewModel.playTracks(mostPlayed, idx)
+                                            },
+                                            onPlayNext = viewModel.playback::playNext,
+                                            onAddToQueue = viewModel.playback::addToQueue,
                                         )
                                     }
                                     LibraryTab.FOLDERS -> {

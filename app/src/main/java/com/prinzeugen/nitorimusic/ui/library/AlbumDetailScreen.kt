@@ -131,9 +131,10 @@ fun AlbumDetailScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
+                val albumTotalSize = com.prinzeugen.nitorimusic.ui.formatBytes(tracks.sumOf { it.sizeBytes })
                 val meta = buildString {
                     if (album.year > 0) append("${album.year} • ")
-                    append("${album.trackCount} lagu")
+                    append("${album.trackCount} lagu • $albumTotalSize")
                 }
                 Text(
                     meta,

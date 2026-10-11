@@ -19,6 +19,9 @@ data class TrackEntity(
     val year: Int = 0,
     val dateAddedSec: Long = 0L,
     val folderPath: String = "",
+    val sizeBytes: Long = 0L,
+    val playCount: Int = 0,
+    val lastPlayedMs: Long = 0L,
 ) {
     fun toDomain(): Track = Track(
         id = id,
@@ -32,6 +35,9 @@ data class TrackEntity(
         year = year,
         dateAddedSec = dateAddedSec,
         folderPath = folderPath,
+        sizeBytes = sizeBytes,
+        playCount = playCount,
+        lastPlayedMs = lastPlayedMs,
     )
 
     companion object {
@@ -47,6 +53,9 @@ data class TrackEntity(
             year = track.year,
             dateAddedSec = track.dateAddedSec,
             folderPath = track.folderPath,
+            sizeBytes = track.sizeBytes,
+            playCount = track.playCount,
+            lastPlayedMs = track.lastPlayedMs,
         )
     }
 }

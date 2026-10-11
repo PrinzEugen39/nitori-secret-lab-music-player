@@ -37,6 +37,30 @@ class SettingsStore(private val context: Context) {
     private val pauseOnHeadsetDisconnectKey = booleanPreferencesKey("pause_on_headset_disconnect")
     private val gaplessEnabledKey = booleanPreferencesKey("gapless_enabled")
     private val replayGainEnabledKey = booleanPreferencesKey("replay_gain_enabled")
+    private val albumArtFitModeKey = booleanPreferencesKey("album_art_fit_mode")
+    private val keepQueueOnPlayKey = booleanPreferencesKey("keep_queue_on_play")
+    private val countAsPlayedThresholdKey = intPreferencesKey("count_as_played_threshold")
+
+    val albumArtFitMode: Flow<Boolean> =
+        context.dataStore.data.map { it[albumArtFitModeKey] ?: false }
+
+    suspend fun setAlbumArtFitMode(enabled: Boolean) {
+        context.dataStore.edit { it[albumArtFitModeKey] = enabled }
+    }
+
+    val keepQueueOnPlay: Flow<Boolean> =
+        context.dataStore.data.map { it[keepQueueOnPlayKey] ?: false }
+
+    suspend fun setKeepQueueOnPlay(enabled: Boolean) {
+        context.dataStore.edit { it[keepQueueOnPlayKey] = enabled }
+    }
+
+    val countAsPlayedThreshold: Flow<Int> =
+        context.dataStore.data.map { it[countAsPlayedThresholdKey] ?: 50 }
+
+    suspend fun setCountAsPlayedThreshold(thresholdPercent: Int) {
+        context.dataStore.edit { it[countAsPlayedThresholdKey] = thresholdPercent.coerceIn(10, 100) }
+    }
 
     val replayGainEnabled: Flow<Boolean> =
         context.dataStore.data.map { it[replayGainEnabledKey] ?: true }

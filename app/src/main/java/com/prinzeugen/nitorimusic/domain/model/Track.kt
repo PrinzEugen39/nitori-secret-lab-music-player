@@ -14,6 +14,9 @@ data class Track(
     val year: Int = 0,
     val dateAddedSec: Long = 0L,
     val folderPath: String = "",
+    val sizeBytes: Long = 0L,
+    val playCount: Int = 0,
+    val lastPlayedMs: Long = 0L,
 )
 
 data class Album(
