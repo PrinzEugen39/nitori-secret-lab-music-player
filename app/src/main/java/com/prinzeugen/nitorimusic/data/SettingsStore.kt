@@ -47,12 +47,28 @@ class SettingsStore(private val context: Context) {
     private val keepQueueOnPlayKey = booleanPreferencesKey("keep_queue_on_play")
     private val countAsPlayedThresholdKey = intPreferencesKey("count_as_played_threshold")
     private val appLanguageKey = stringPreferencesKey("app_language")
+    private val playbackShuffleModeKey = stringPreferencesKey("playback_shuffle_mode")
+    private val playbackRepeatModeKey = stringPreferencesKey("playback_repeat_mode")
 
     val appLanguage: Flow<String> =
         context.dataStore.data.map { it[appLanguageKey] ?: "system" }
 
     suspend fun setAppLanguage(languageCode: String) {
         context.dataStore.edit { it[appLanguageKey] = languageCode }
+    }
+
+    val playbackShuffleMode: Flow<String> =
+        context.dataStore.data.map { it[playbackShuffleModeKey] ?: "OFF" }
+
+    suspend fun setPlaybackShuffleMode(mode: String) {
+        context.dataStore.edit { it[playbackShuffleModeKey] = mode }
+    }
+
+    val playbackRepeatMode: Flow<String> =
+        context.dataStore.data.map { it[playbackRepeatModeKey] ?: "PLAY_CATEGORY" }
+
+    suspend fun setPlaybackRepeatMode(mode: String) {
+        context.dataStore.edit { it[playbackRepeatModeKey] = mode }
     }
 
     val selectedMusicFolders: Flow<List<MusicFolder>> =

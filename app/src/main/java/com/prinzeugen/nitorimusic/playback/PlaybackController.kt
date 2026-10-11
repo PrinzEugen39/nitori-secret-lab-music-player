@@ -12,6 +12,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import com.prinzeugen.nitorimusic.domain.model.PlaybackRepeatMode
 import com.prinzeugen.nitorimusic.domain.model.Track
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,7 @@ data class PlaybackUiState(
     val currentIndex: Int = -1,
     val durationMs: Long = 0L,
     val repeatMode: Int = Player.REPEAT_MODE_OFF,
+    val playbackRepeatMode: PlaybackRepeatMode = PlaybackRepeatMode.PLAY_CATEGORY,
     val sleepTimerMinutesLeft: Int = 0,
     val sleepTimerSecondsLeft: Int = 0,
     val audioSpecs: AudioSpecs? = null,
@@ -78,6 +80,14 @@ class PlaybackController(private val context: Context) {
 
     private val listener = object : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) = publish(player)
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                if (_state.value.playbackRepeatMode == PlaybackRepeatMode.PLAY_SINGLE_SONG) {
+                    controller?.pause()
+                }
+            }
+        }
     }
 
     fun connect() {
@@ -200,15 +210,25 @@ class PlaybackController(private val context: Context) {
         c.moveMediaItem(from, to)
     }
 
-    fun toggleRepeatMode() {
+    fun setPlaybackRepeatMode(mode: PlaybackRepeatMode) {
         val c = controller ?: return
-        val nextMode = when (c.repeatMode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+        _state.value = _state.value.copy(playbackRepeatMode = mode)
+        val exoMode = when (mode) {
+            PlaybackRepeatMode.REPEAT_SONG -> Player.REPEAT_MODE_ONE
+            PlaybackRepeatMode.REPEAT_ALL_CATEGORIES, PlaybackRepeatMode.REPEAT_CATEGORY -> Player.REPEAT_MODE_ALL
             else -> Player.REPEAT_MODE_OFF
         }
-        c.repeatMode = nextMode
+        c.repeatMode = exoMode
         publish(c)
+    }
+
+    fun toggleRepeatMode() {
+        val nextMode = when (_state.value.playbackRepeatMode) {
+            PlaybackRepeatMode.PLAY_CATEGORY, PlaybackRepeatMode.PLAY_ALL_CATEGORIES, PlaybackRepeatMode.PLAY_SINGLE_SONG -> PlaybackRepeatMode.REPEAT_ALL_CATEGORIES
+            PlaybackRepeatMode.REPEAT_ALL_CATEGORIES, PlaybackRepeatMode.REPEAT_CATEGORY -> PlaybackRepeatMode.REPEAT_SONG
+            PlaybackRepeatMode.REPEAT_SONG -> PlaybackRepeatMode.PLAY_CATEGORY
+        }
+        setPlaybackRepeatMode(nextMode)
     }
 
     private var sleepJob: kotlinx.coroutines.Job? = null
@@ -288,6 +308,7 @@ class PlaybackController(private val context: Context) {
             currentIndex = if (item == null) -1 else player.currentMediaItemIndex,
             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
             repeatMode = player.repeatMode,
+            playbackRepeatMode = _state.value.playbackRepeatMode,
             sleepTimerMinutesLeft = _state.value.sleepTimerMinutesLeft,
             sleepTimerSecondsLeft = _state.value.sleepTimerSecondsLeft,
             audioSpecs = specs,

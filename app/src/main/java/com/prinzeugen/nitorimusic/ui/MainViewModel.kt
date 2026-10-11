@@ -12,6 +12,8 @@ import com.prinzeugen.nitorimusic.domain.model.Folder
 import com.prinzeugen.nitorimusic.domain.model.LibraryTab
 import com.prinzeugen.nitorimusic.domain.model.ListOptions
 import com.prinzeugen.nitorimusic.domain.model.MusicFolder
+import com.prinzeugen.nitorimusic.domain.model.PlaybackRepeatMode
+import com.prinzeugen.nitorimusic.domain.model.ShuffleMode
 import com.prinzeugen.nitorimusic.domain.model.SortType
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -97,8 +100,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val selectedFolder: StateFlow<Folder?> = _selectedFolder.asStateFlow()
 
     private var originalQueueTracks: List<Track> = emptyList()
-    private val _isShuffleOn = MutableStateFlow(false)
-    val isShuffleOn: StateFlow<Boolean> = _isShuffleOn.asStateFlow()
+    private val _shuffleMode = MutableStateFlow(ShuffleMode.OFF)
+    val shuffleMode: StateFlow<ShuffleMode> = _shuffleMode.asStateFlow()
+    val isShuffleOn: StateFlow<Boolean> = _shuffleMode.map { it.isActive }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _isInitialLoaded = MutableStateFlow(false)
     val isInitialLoaded: StateFlow<Boolean> = _isInitialLoaded.asStateFlow()
@@ -107,6 +112,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         playback.connect()
         observePlayCountTracking()
         loadCachedTracksImmediately()
+        loadPersistedPlaybackModes()
+    }
+
+    private fun loadPersistedPlaybackModes() {
+        viewModelScope.launch {
+            val modeStr = settings.playbackShuffleMode.first()
+            val mode = runCatching { ShuffleMode.valueOf(modeStr) }.getOrDefault(ShuffleMode.OFF)
+            _shuffleMode.value = mode
+        }
+        viewModelScope.launch {
+            val modeStr = settings.playbackRepeatMode.first()
+            val mode = runCatching { PlaybackRepeatMode.valueOf(modeStr) }.getOrDefault(PlaybackRepeatMode.PLAY_CATEGORY)
+            playback.setPlaybackRepeatMode(mode)
+        }
+    }
+
+    fun setPlaybackRepeatMode(mode: PlaybackRepeatMode) {
+        playback.setPlaybackRepeatMode(mode)
+        viewModelScope.launch {
+            settings.setPlaybackRepeatMode(mode.name)
+        }
     }
 
     /**
@@ -312,7 +338,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             playback.playTrackInQueueOrInsert(targetTrack)
         } else {
             originalQueueTracks = tracks
-            _isShuffleOn.value = false
+            _shuffleMode.value = ShuffleMode.OFF
+            viewModelScope.launch { settings.setPlaybackShuffleMode(ShuffleMode.OFF.name) }
             playback.playAll(tracks, index)
         }
     }
@@ -323,7 +350,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             playback.playTrackInQueueOrInsert(targetTrack)
         } else {
             originalQueueTracks = trackList
-            _isShuffleOn.value = false
+            _shuffleMode.value = ShuffleMode.OFF
+            viewModelScope.launch { settings.setPlaybackShuffleMode(ShuffleMode.OFF.name) }
             playback.playAll(trackList, startIndex)
         }
     }
@@ -352,7 +380,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun shuffleTracks(trackList: List<Track>) {
         if (trackList.isEmpty()) return
         originalQueueTracks = trackList
-        _isShuffleOn.value = true
+        _shuffleMode.value = ShuffleMode.ALL
+        viewModelScope.launch { settings.setPlaybackShuffleMode(ShuffleMode.ALL.name) }
         val engine = SmartShuffle(shuffleSpread.value)
         playback.playAll(engine.shuffle(trackList), 0)
     }
@@ -363,19 +392,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Poweramp-style Shuffle Toggle di Now Playing:
-     * - Saat diaktifkan (ON): Lagu yang sedang dibuka menjadi lagu pertama (#1),
-     *   lalu sisa lagu dalam album diacak di belakangnya tanpa memotong audio.
-     * - Saat dimatikan (OFF): Antrean dikembalikan ke urutan sequential album (1..N),
-     *   dengan lagu yang sedang berputar tetap di track indeks aslinya (misal track 3 / total).
+     * Poweramp-style Shuffle Mode Selector:
+     * Mengatur mode acak (Off, All, Songs, Categories, Songs/Categories)
+     * tanpa memotong audio lagu yang sedang berjalan.
      */
-    fun toggleShuffle() {
+    fun setShuffleMode(mode: ShuffleMode) {
         val currentQueue = playback.state.value.queue
-        if (currentQueue.isEmpty()) return
-
-        val currentMediaId = playback.state.value.currentMediaId ?: return
-        val currentTrackId = currentMediaId.toLongOrNull() ?: return
+        val currentMediaId = playback.state.value.currentMediaId
+        val currentTrackId = currentMediaId?.toLongOrNull()
         val currentPos = playback.positionMs()
+
+        _shuffleMode.value = mode
+        viewModelScope.launch { settings.setPlaybackShuffleMode(mode.name) }
+
+        if (currentQueue.isEmpty() || currentTrackId == null) return
 
         var baseTracks = originalQueueTracks
         if (baseTracks.isEmpty()) {
@@ -394,20 +424,55 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             ?: _tracks.value.find { it.id == currentTrackId }
             ?: return
 
-        if (!_isShuffleOn.value) {
-            // SHUFFLE ON: Lagu saat ini urutan #1, sisa lagu diacak di belakangnya
-            val otherTracks = baseTracks.filter { it.id != currentTrack.id }
-            val engine = SmartShuffle(shuffleSpread.value)
-            val shuffledOthers = engine.shuffle(otherTracks)
-            val newQueue = listOf(currentTrack) + shuffledOthers
+        when (mode) {
+            ShuffleMode.OFF -> {
+                val originalIndex = baseTracks.indexOfFirst { it.id == currentTrack.id }.coerceAtLeast(0)
+                playback.setQueueKeepPosition(baseTracks, startIndex = originalIndex, positionMs = currentPos)
+            }
+            ShuffleMode.ALL -> {
+                val engine = SmartShuffle(shuffleSpread.value)
+                val otherTracks = _tracks.value.filter { it.id != currentTrack.id }
+                val shuffledOthers = engine.shuffle(otherTracks)
+                val newQueue = listOf(currentTrack) + shuffledOthers
+                playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
+            }
+            ShuffleMode.SONGS -> {
+                val albumTracks = getTracksForAlbum(currentTrack.albumId).ifEmpty { baseTracks }
+                val otherTracks = albumTracks.filter { it.id != currentTrack.id }
+                val engine = SmartShuffle(shuffleSpread.value)
+                val shuffledOthers = engine.shuffle(otherTracks)
+                val newQueue = listOf(currentTrack) + shuffledOthers
+                playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
+            }
+            ShuffleMode.CATEGORIES -> {
+                val currentAlbumTracks = getTracksForAlbum(currentTrack.albumId).ifEmpty { baseTracks }
+                val otherAlbumIds = _tracks.value.map { it.albumId }.distinct().filter { it != currentTrack.albumId }.shuffled()
+                val otherAlbumsSequentialTracks = otherAlbumIds.flatMap { albumId ->
+                    getTracksForAlbum(albumId)
+                }
+                val otherCurrentAlbumTracks = currentAlbumTracks.filter { it.id != currentTrack.id }
+                val newQueue = listOf(currentTrack) + otherCurrentAlbumTracks + otherAlbumsSequentialTracks
+                playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
+            }
+            ShuffleMode.SONGS_AND_CATEGORIES -> {
+                val engine = SmartShuffle(shuffleSpread.value)
+                val currentAlbumTracks = getTracksForAlbum(currentTrack.albumId).ifEmpty { baseTracks }
+                val otherCurrentAlbumTracks = engine.shuffle(currentAlbumTracks.filter { it.id != currentTrack.id })
+                val otherAlbumIds = _tracks.value.map { it.albumId }.distinct().filter { it != currentTrack.albumId }.shuffled()
+                val otherAlbumsShuffledTracks = otherAlbumIds.flatMap { albumId ->
+                    engine.shuffle(getTracksForAlbum(albumId))
+                }
+                val newQueue = listOf(currentTrack) + otherCurrentAlbumTracks + otherAlbumsShuffledTracks
+                playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
+            }
+        }
+    }
 
-            playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
-            _isShuffleOn.value = true
+    fun toggleShuffle() {
+        if (_shuffleMode.value.isActive) {
+            setShuffleMode(ShuffleMode.OFF)
         } else {
-            // SHUFFLE OFF: Kembalikan ke urutan sequential album asli (misal 1..N)
-            val originalIndex = baseTracks.indexOfFirst { it.id == currentTrack.id }.coerceAtLeast(0)
-            playback.setQueueKeepPosition(baseTracks, startIndex = originalIndex, positionMs = currentPos)
-            _isShuffleOn.value = false
+            setShuffleMode(ShuffleMode.ALL)
         }
     }
 
@@ -436,7 +501,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val newQueue = listOf(currentTrack) + shuffledOthers
 
         playback.setQueueKeepPosition(newQueue, startIndex = 0, positionMs = currentPos)
-        _isShuffleOn.value = true
+        _shuffleMode.value = ShuffleMode.ALL
+        viewModelScope.launch { settings.setPlaybackShuffleMode(ShuffleMode.ALL.name) }
     }
 
     fun setShuffleSpread(value: Float) {

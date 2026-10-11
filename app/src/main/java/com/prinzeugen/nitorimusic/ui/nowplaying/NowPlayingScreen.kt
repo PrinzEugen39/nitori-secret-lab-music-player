@@ -65,10 +65,13 @@ import androidx.media3.common.Player
 import androidx.palette.graphics.Palette
 import com.prinzeugen.nitorimusic.R
 import com.prinzeugen.nitorimusic.data.ArtworkLoader
+import com.prinzeugen.nitorimusic.domain.model.PlaybackRepeatMode
+import com.prinzeugen.nitorimusic.domain.model.ShuffleMode
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
 import com.prinzeugen.nitorimusic.ui.components.TrackDetailActionDialog
 import com.prinzeugen.nitorimusic.ui.formatTime
+import com.prinzeugen.nitorimusic.ui.library.ShuffleOptionsDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -85,10 +88,15 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
     var seekValue by remember { mutableFloatStateOf(0f) }
     var showSleepTimer by remember { mutableStateOf(false) }
     var showTrackDetail by remember { mutableStateOf(false) }
+    var showShuffleModeDialog by remember { mutableStateOf(false) }
+    var showRepeatModeDialog by remember { mutableStateOf(false) }
+    var showShuffleOptionsDialog by remember { mutableStateOf(false) }
     var dominantColor by remember { mutableStateOf(Color.Transparent) }
 
     val albumArtFitMode by viewModel.albumArtFitMode.collectAsState()
     val isShuffleOn by viewModel.isShuffleOn.collectAsState()
+    val shuffleMode by viewModel.shuffleMode.collectAsState()
+    val shuffleSpread by viewModel.shuffleSpread.collectAsState()
     val allTracks by viewModel.tracks.collectAsState()
     val currentTrack = remember(state.currentMediaId, allTracks) {
         val tId = state.currentMediaId?.toLongOrNull()
@@ -160,6 +168,31 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                 viewModel.saveCustomAlbumArt(albumId, uri)
             },
             onDismiss = { showTrackDetail = false }
+        )
+    }
+
+    if (showShuffleModeDialog) {
+        ShuffleModeDialog(
+            currentMode = shuffleMode,
+            onSelectMode = { mode -> viewModel.setShuffleMode(mode) },
+            onOpenSettings = { showShuffleOptionsDialog = true },
+            onDismiss = { showShuffleModeDialog = false }
+        )
+    }
+
+    if (showShuffleOptionsDialog) {
+        ShuffleOptionsDialog(
+            spread = shuffleSpread,
+            onSpreadChange = viewModel::setShuffleSpread,
+            onDismiss = { showShuffleOptionsDialog = false }
+        )
+    }
+
+    if (showRepeatModeDialog) {
+        RepeatModeDialog(
+            currentMode = state.playbackRepeatMode,
+            onSelectMode = { mode -> viewModel.setPlaybackRepeatMode(mode) },
+            onDismiss = { showRepeatModeDialog = false }
         )
     }
 
@@ -374,7 +407,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                         .clip(CircleShape)
                         .combinedClickable(
                             onClick = viewModel::toggleShuffle,
-                            onLongClick = viewModel::reshuffleCurrentQueue,
+                            onLongClick = { showShuffleModeDialog = true },
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -414,14 +447,40 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                     )
                 }
 
-                IconButton(onClick = playback::toggleRepeatMode) {
-                    val icon = when (state.repeatMode) {
-                        Player.REPEAT_MODE_ONE -> Icons.Rounded.RepeatOne
-                        else -> Icons.Rounded.Repeat
+                val currentRepeatMode = state.playbackRepeatMode
+                val repeatIcon = when (currentRepeatMode) {
+                    PlaybackRepeatMode.REPEAT_SONG -> Icons.Rounded.RepeatOne
+                    else -> Icons.Rounded.Repeat
+                }
+                val repeatTint = if (currentRepeatMode.isRepeating) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            onClick = playback::toggleRepeatMode,
+                            onLongClick = { showRepeatModeDialog = true },
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (currentRepeatMode == PlaybackRepeatMode.PLAY_SINGLE_SONG) {
+                        Text(
+                            text = "1",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 18.sp
+                            ),
+                            color = repeatTint
+                        )
+                    } else {
+                        Icon(
+                            repeatIcon,
+                            contentDescription = stringResource(R.string.repeat),
+                            tint = repeatTint
+                        )
                     }
-                    val tint = if (state.repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                    Icon(icon, contentDescription = stringResource(R.string.repeat), tint = tint)
                 }
             }
 

@@ -107,6 +107,34 @@
     <string name="shuffle_even_spread">Sebar merata</string>
     <string name="shuffle_spread_desc">Semakin ke kanan, lagu dari artis yang sama semakin jarang diputar berturutan.</string>
 
+    <!-- Playback Modes: Shuffle Dialog (Poweramp style) -->
+    <string name="shuffle_mode_dialog_title">Mode Acak</string>
+    <string name="shuffle_off">Acak Mati</string>
+    <string name="shuffle_off_desc">Pemutaran berurutan normal</string>
+    <string name="shuffle_mode_all">Acak Semua</string>
+    <string name="shuffle_all_desc">Acak seluruh lagu yang tersedia</string>
+    <string name="shuffle_songs">Acak Lagu</string>
+    <string name="shuffle_songs_desc">Urutan kategori tetap berurutan</string>
+    <string name="shuffle_categories">Acak Kategori</string>
+    <string name="shuffle_categories_desc">Urutan lagu tetap berurutan</string>
+    <string name="shuffle_songs_categories">Acak Lagu/Kategori</string>
+    <string name="shuffle_songs_categories_desc">Acak kategori dan seluruh lagu</string>
+
+    <!-- Playback Modes: Repeat Dialog (Poweramp style) -->
+    <string name="repeat_mode_dialog_title">Mode Pengulangan</string>
+    <string name="play_single_song">Putar Satu Lagu</string>
+    <string name="play_single_song_desc">Putar lagu saat ini lalu berhenti</string>
+    <string name="play_category">Putar Kategori</string>
+    <string name="play_category_desc">Putar kategori saat ini lalu berhenti</string>
+    <string name="play_all_categories">Putar Semua Kategori</string>
+    <string name="play_all_categories_desc">Putar seluruh kategori lalu berhenti</string>
+    <string name="repeat_song">Ulangi Lagu</string>
+    <string name="repeat_song_desc">Putar lagu saat ini dan ulangi</string>
+    <string name="repeat_category">Ulangi Kategori</string>
+    <string name="repeat_category_desc">Putar kategori saat ini dan ulangi</string>
+    <string name="repeat_all_categories">Ulangi Semua Kategori</string>
+    <string name="repeat_all_categories_desc">Putar semua kategori dan ulangi</string>
+
     <!-- Sleep Timer Dialog -->
     <string name="sleep_timer_title_remaining">Sleep Timer: %1$s lagi</string>
     <string name="sleep_timer_title_min_remaining">Sleep Timer: %1$d mnt lagi</string>

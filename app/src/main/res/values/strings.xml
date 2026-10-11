@@ -107,6 +107,34 @@
     <string name="shuffle_even_spread">Even spread</string>
     <string name="shuffle_spread_desc">The further right, the less often songs from the same artist play consecutively.</string>
 
+    <!-- Playback Modes: Shuffle Dialog (Poweramp style) -->
+    <string name="shuffle_mode_dialog_title">Shuffle Mode</string>
+    <string name="shuffle_off">Shuffle Off</string>
+    <string name="shuffle_off_desc">Sequential playback</string>
+    <string name="shuffle_mode_all">Shuffle All</string>
+    <string name="shuffle_all_desc">Shuffle All Available Songs</string>
+    <string name="shuffle_songs">Shuffle Songs</string>
+    <string name="shuffle_songs_desc">Categories remain in order</string>
+    <string name="shuffle_categories">Shuffle Categories</string>
+    <string name="shuffle_categories_desc">Songs remain in order</string>
+    <string name="shuffle_songs_categories">Shuffle Songs/Categories</string>
+    <string name="shuffle_songs_categories_desc">Shuffle categories and songs</string>
+
+    <!-- Playback Modes: Repeat Dialog (Poweramp style) -->
+    <string name="repeat_mode_dialog_title">Repeat Mode</string>
+    <string name="play_single_song">Play Single Song</string>
+    <string name="play_single_song_desc">Play the current song and stop</string>
+    <string name="play_category">Play Category</string>
+    <string name="play_category_desc">Play the current category and stop</string>
+    <string name="play_all_categories">Play All Categories</string>
+    <string name="play_all_categories_desc">Play all categories and stop</string>
+    <string name="repeat_song">Repeat Song</string>
+    <string name="repeat_song_desc">Play the current song and repeat</string>
+    <string name="repeat_category">Repeat Category</string>
+    <string name="repeat_category_desc">Play the current category and repeat</string>
+    <string name="repeat_all_categories">Repeat All Categories</string>
+    <string name="repeat_all_categories_desc">Play all categories and repeat</string>
+
     <!-- Sleep Timer Dialog -->
     <string name="sleep_timer_title_remaining">Sleep Timer: %1$s left</string>
     <string name="sleep_timer_title_min_remaining">Sleep Timer: %1$d min left</string>
