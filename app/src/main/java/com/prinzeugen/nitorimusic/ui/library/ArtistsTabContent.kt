@@ -35,7 +35,7 @@ fun ArtistsTabContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 12.dp)
+            contentPadding = PaddingValues(end = 22.dp, bottom = 12.dp)
         ) {
             items(artists, key = { it.name }) { artist ->
                 Row(

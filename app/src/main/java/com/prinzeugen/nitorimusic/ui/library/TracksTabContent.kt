@@ -91,7 +91,7 @@ fun TracksTabContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 12.dp,
-                    end = 12.dp,
+                    end = 24.dp,
                     top = 12.dp,
                     bottom = if (isSelectionMode) 100.dp else 12.dp
                 ),
@@ -189,6 +189,7 @@ fun TracksTabContent(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
+                    end = 22.dp,
                     bottom = if (isSelectionMode) 100.dp else 12.dp
                 )
             ) {

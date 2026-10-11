@@ -6,11 +6,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -102,7 +105,8 @@ fun <T> FastAlphabetScroller(
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .padding(vertical = 16.dp, horizontal = 2.dp),
+            .padding(vertical = 12.dp, horizontal = 2.dp)
+            .zIndex(100f),
         contentAlignment = Alignment.CenterEnd
     ) {
         // Floating Letter Preview Bubble di samping kiri bar scroller
@@ -110,21 +114,21 @@ fun <T> FastAlphabetScroller(
             visible = isDragging && activeLetter != null,
             enter = fadeIn() + scaleIn(),
             exit = fadeOut() + scaleOut(),
-            modifier = Modifier.padding(end = 36.dp)
+            modifier = Modifier.padding(end = 40.dp)
         ) {
             Surface(
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(60.dp),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary,
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp
+                tonalElevation = 8.dp,
+                shadowElevation = 10.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = activeLetter.orEmpty(),
                         style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
+                            fontWeight = FontWeight.Black,
+                            fontSize = 32.sp
                         ),
                         color = MaterialTheme.colorScheme.onPrimary,
                         textAlign = TextAlign.Center
@@ -137,9 +141,14 @@ fun <T> FastAlphabetScroller(
         Column(
             modifier = Modifier
                 .width(22.dp)
-                .fillMaxHeight(0.92f)
+                .fillMaxHeight(0.94f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f))
+                .border(
+                    width = 0.8.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(12.dp)
+                )
                 .padding(vertical = 4.dp)
                 .onGloballyPositioned { coordinates ->
                     barHeight = coordinates.size.height
@@ -184,15 +193,15 @@ fun <T> FastAlphabetScroller(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = char,
-                        fontSize = 9.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                        fontSize = 8.5.sp,
+                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
                         color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
                 }

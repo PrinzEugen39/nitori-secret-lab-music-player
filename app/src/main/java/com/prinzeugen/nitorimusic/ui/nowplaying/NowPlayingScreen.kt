@@ -2,8 +2,11 @@ package com.prinzeugen.nitorimusic.ui.nowplaying
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,11 +64,13 @@ import androidx.palette.graphics.Palette
 import com.prinzeugen.nitorimusic.data.ArtworkLoader
 import com.prinzeugen.nitorimusic.ui.MainViewModel
 import com.prinzeugen.nitorimusic.ui.components.ArtworkImage
+import com.prinzeugen.nitorimusic.ui.components.TrackDetailActionDialog
 import com.prinzeugen.nitorimusic.ui.formatTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: () -> Unit) {
     val playback = viewModel.playback
@@ -76,7 +81,14 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
     var seeking by remember { mutableStateOf(false) }
     var seekValue by remember { mutableFloatStateOf(0f) }
     var showSleepTimer by remember { mutableStateOf(false) }
+    var showTrackDetail by remember { mutableStateOf(false) }
     var dominantColor by remember { mutableStateOf(Color.Transparent) }
+
+    val allTracks by viewModel.tracks.collectAsState()
+    val currentTrack = remember(state.currentMediaId, allTracks) {
+        val tId = state.currentMediaId?.toLongOrNull()
+        allTracks.find { it.id == tId }
+    }
 
     // Dynamic Material You Dominant Color Extraction dari Cover Art
     LaunchedEffect(state.currentMediaId) {
@@ -116,6 +128,33 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
             onSetTimer = playback::setSleepTimer,
             onCancelTimer = playback::cancelSleepTimer,
             onDismiss = { showSleepTimer = false }
+        )
+    }
+
+    if (showTrackDetail && currentTrack != null) {
+        TrackDetailActionDialog(
+            track = currentTrack,
+            audioSpecs = state.audioSpecs,
+            onPlayNext = { playback.playNext(currentTrack) },
+            onAddToQueue = { playback.addToQueue(currentTrack) },
+            onGoToAlbum = { albumId ->
+                val album = viewModel.getAlbums().find { it.id == albumId }
+                if (album != null) {
+                    viewModel.openAlbum(album)
+                    onBack()
+                }
+            },
+            onGoToArtist = { artistName ->
+                val artist = viewModel.getArtists().find { it.name.equals(artistName, ignoreCase = true) }
+                if (artist != null) {
+                    viewModel.openArtist(artist)
+                    onBack()
+                }
+            },
+            onChangeAlbumArt = { albumId, uri ->
+                viewModel.saveCustomAlbumArt(albumId, uri)
+            },
+            onDismiss = { showTrackDetail = false }
         )
     }
 
@@ -238,7 +277,12 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                             trackId = item?.trackId,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .clip(RoundedCornerShape(16.dp)),
+                                .clip(RoundedCornerShape(16.dp))
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onLongPress = { showTrackDetail = true }
+                                    )
+                                },
                         )
                     }
                 } else {
@@ -246,16 +290,28 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                         trackId = trackId,
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(16.dp)),
+                            .clip(RoundedCornerShape(16.dp))
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onLongPress = { showTrackDetail = true }
+                                )
+                            },
                     )
                 }
             }
 
             Spacer(Modifier.height(10.dp))
 
-            // Title, Artist & Album
+            // Title, Artist & Album (Tahan untuk buka Context Menu / Detail Lagu)
             Column(
-                Modifier.fillMaxWidth(),
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = { showTrackDetail = true }
+                    )
+                    .padding(vertical = 4.dp, horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
