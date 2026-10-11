@@ -10,6 +10,7 @@ import com.prinzeugen.nitorimusic.domain.model.Artist
 import com.prinzeugen.nitorimusic.domain.model.Folder
 import com.prinzeugen.nitorimusic.domain.model.LibraryTab
 import com.prinzeugen.nitorimusic.domain.model.ListOptions
+import com.prinzeugen.nitorimusic.domain.model.MusicFolder
 import com.prinzeugen.nitorimusic.domain.model.SortType
 import com.prinzeugen.nitorimusic.domain.model.Track
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -66,6 +68,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val countAsPlayedThreshold: StateFlow<Int> = settings.countAsPlayedThreshold
         .stateIn(viewModelScope, SharingStarted.Eagerly, 50)
+
+    val selectedMusicFolders: StateFlow<List<MusicFolder>> = settings.selectedMusicFolders
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
@@ -176,7 +181,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun ensureLibraryLoaded() {
         viewModelScope.launch {
-            val cached = repository.getCachedTracks()
+            val enabledFolders = settings.selectedMusicFolders.first().filter { it.isEnabled }.map { it.path }
+            val cached = repository.getCachedTracks(enabledFolders)
             if (cached.isNotEmpty()) {
                 _tracks.value = cached
             } else {
@@ -192,8 +198,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun refreshLibrary(forceSync: Boolean = false) {
         viewModelScope.launch {
+            val enabledFolders = settings.selectedMusicFolders.first().filter { it.isEnabled }.map { it.path }
             if (!forceSync || _tracks.value.isEmpty()) {
-                val cached = repository.getCachedTracks()
+                val cached = repository.getCachedTracks(enabledFolders)
                 if (cached.isNotEmpty()) {
                     _tracks.value = cached
                 }
@@ -201,7 +208,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _isScanning.value = true
             _scanStatus.value = "Memeriksa berkas musik..."
             try {
-                val synced = repository.syncFromMediaStore { status ->
+                val synced = repository.syncFromMediaStore(enabledFolders = enabledFolders) { status ->
                     _scanStatus.value = status
                 }
                 _tracks.value = synced
@@ -214,6 +221,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun rescanLibrary() {
         refreshLibrary(forceSync = true)
+    }
+
+    fun saveMusicFolders(folders: List<MusicFolder>) {
+        viewModelScope.launch {
+            settings.setSelectedMusicFolders(folders)
+            refreshLibrary(forceSync = true)
+        }
     }
 
     fun clearCacheAndRescan() {

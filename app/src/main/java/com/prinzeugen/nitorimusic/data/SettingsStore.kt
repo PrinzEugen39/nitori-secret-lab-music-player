@@ -9,14 +9,20 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.prinzeugen.nitorimusic.domain.model.ListOptions
+import com.prinzeugen.nitorimusic.domain.model.MusicFolder
 import com.prinzeugen.nitorimusic.domain.model.SortType
 import com.prinzeugen.nitorimusic.domain.model.ViewLayout
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 
 private val Context.dataStore by preferencesDataStore(name = "settings")
 
 class SettingsStore(private val context: Context) {
+
+    private val selectedMusicFoldersKey = stringPreferencesKey("selected_music_folders")
 
     private val shuffleSpreadKey = floatPreferencesKey("shuffle_spread")
     private val albumsSortKey = stringPreferencesKey("albums_sort")
@@ -40,6 +46,53 @@ class SettingsStore(private val context: Context) {
     private val albumArtFitModeKey = booleanPreferencesKey("album_art_fit_mode")
     private val keepQueueOnPlayKey = booleanPreferencesKey("keep_queue_on_play")
     private val countAsPlayedThresholdKey = intPreferencesKey("count_as_played_threshold")
+
+    val selectedMusicFolders: Flow<List<MusicFolder>> =
+        context.dataStore.data.map { prefs ->
+            val raw = prefs[selectedMusicFoldersKey] ?: ""
+            parseMusicFolders(raw)
+        }
+
+    suspend fun setSelectedMusicFolders(folders: List<MusicFolder>) {
+        context.dataStore.edit { prefs ->
+            prefs[selectedMusicFoldersKey] = serializeMusicFolders(folders)
+        }
+    }
+
+    private fun serializeMusicFolders(folders: List<MusicFolder>): String {
+        val array = JSONArray()
+        for (f in folders) {
+            val obj = JSONObject()
+            obj.put("path", f.path)
+            obj.put("displayName", f.displayName)
+            obj.put("storageLabel", f.storageLabel)
+            obj.put("isEnabled", f.isEnabled)
+            array.put(obj)
+        }
+        return array.toString()
+    }
+
+    private fun parseMusicFolders(raw: String): List<MusicFolder> {
+        if (raw.isBlank()) return emptyList()
+        return try {
+            val array = JSONArray(raw)
+            val list = mutableListOf<MusicFolder>()
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    MusicFolder(
+                        path = obj.getString("path"),
+                        displayName = obj.optString("displayName", File(obj.getString("path")).name),
+                        storageLabel = obj.optString("storageLabel", ""),
+                        isEnabled = obj.optBoolean("isEnabled", true)
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
 
     val albumArtFitMode: Flow<Boolean> =
         context.dataStore.data.map { it[albumArtFitModeKey] ?: false }

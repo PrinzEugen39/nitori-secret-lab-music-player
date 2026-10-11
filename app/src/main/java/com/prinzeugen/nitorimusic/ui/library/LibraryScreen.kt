@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Tune
@@ -63,6 +64,7 @@ fun LibraryScreen(
 
     var showListOptions by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
+    var showFolderSelection by remember { mutableStateOf(false) }
 
     if (showSearch) {
         SearchDialog(
@@ -71,6 +73,15 @@ fun LibraryScreen(
                 viewModel.playTracks(listOf(track), 0)
             },
             onDismiss = { showSearch = false },
+        )
+    }
+
+    if (showFolderSelection) {
+        val selectedMusicFolders by viewModel.selectedMusicFolders.collectAsState()
+        FolderSelectionDialog(
+            initialFolders = selectedMusicFolders,
+            onSaveAndScan = viewModel::saveMusicFolders,
+            onDismiss = { showFolderSelection = false },
         )
     }
 
@@ -177,6 +188,12 @@ fun LibraryScreen(
                                 if (currentTab == LibraryTab.ALBUMS || currentTab == LibraryTab.TRACKS) {
                                     IconButton(onClick = { showListOptions = true }) {
                                         Icon(Icons.Rounded.Tune, contentDescription = "List Options")
+                                    }
+                                }
+
+                                if (currentTab == LibraryTab.FOLDERS) {
+                                    IconButton(onClick = { showFolderSelection = true }) {
+                                        Icon(Icons.Rounded.FolderOpen, contentDescription = "Folders Selection")
                                     }
                                 }
 

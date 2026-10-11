@@ -44,12 +44,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.prinzeugen.nitorimusic.ui.MainViewModel
+import com.prinzeugen.nitorimusic.ui.library.FolderSelectionDialog
 
 @Composable
 fun SettingsScreen(
@@ -66,6 +72,9 @@ fun SettingsScreen(
     val albumArtFitMode by viewModel.albumArtFitMode.collectAsState()
     val keepQueueOnPlay by viewModel.keepQueueOnPlay.collectAsState()
     val countThreshold by viewModel.countAsPlayedThreshold.collectAsState()
+    val selectedMusicFolders by viewModel.selectedMusicFolders.collectAsState()
+
+    var showFolderSelectionDialog by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -135,6 +144,51 @@ fun SettingsScreen(
 
             // --- Section 2: Library & Room Cache ---
             SectionHeader(icon = Icons.Rounded.Storage, title = "Library & Database Cache")
+
+            // Folders Selection Card (Poweramp-style)
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { showFolderSelectionDialog = true }
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Folders Selection",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        val folderSubtitle = if (selectedMusicFolders.isEmpty()) {
+                            "Default (seluruh folder musik, abaikan WhatsApp & rekaman)"
+                        } else {
+                            val enabledCount = selectedMusicFolders.count { it.isEnabled }
+                            "$enabledCount folder aktif (${selectedMusicFolders.joinToString(", ") { it.displayName }})"
+                        }
+                        Text(
+                            folderSubtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        Icons.Rounded.FolderOpen,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
+            }
 
             Card(
                 colors = CardDefaults.cardColors(
@@ -351,6 +405,14 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(32.dp))
         }
+    }
+
+    if (showFolderSelectionDialog) {
+        FolderSelectionDialog(
+            initialFolders = selectedMusicFolders,
+            onSaveAndScan = viewModel::saveMusicFolders,
+            onDismiss = { showFolderSelectionDialog = false }
+        )
     }
 }
 

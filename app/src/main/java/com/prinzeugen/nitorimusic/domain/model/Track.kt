@@ -45,3 +45,10 @@ data class Folder(
     val trackCount: Int,
 )
 
+data class MusicFolder(
+    val path: String,
+    val displayName: String,
+    val storageLabel: String = "",
+    val isEnabled: Boolean = true,
+)
+

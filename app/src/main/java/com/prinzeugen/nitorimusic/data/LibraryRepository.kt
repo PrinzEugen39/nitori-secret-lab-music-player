@@ -26,11 +26,67 @@ class LibraryRepository(private val context: Context) {
 
     companion object {
         private const val TAG = "CUE_SCAN"
+
+        private val JUNK_FOLDER_KEYWORDS = listOf(
+            "com.whatsapp",
+            "whatsapp/media",
+            "whatsapp audio",
+            "whatsapp voice notes",
+            "org.telegram",
+            "telegram/telegram audio",
+            "telegram audio",
+            "/recordings",
+            "/voice recorder",
+            "/sound recorder",
+            "/call_recordings",
+            "/call recordings",
+            "/notifications",
+            "/ringtones",
+            "/alarms",
+            "/android/data",
+            "/android/obb",
+        )
+
+        /**
+         * Memeriksa apakah audio merupakan file sampah non-musik
+         * (misal pesan suara WhatsApp, audio Telegram, rekaman telepon, nada dering).
+         */
+        fun isJunkAudio(folderPath: String, titleOrName: String = "", durationMs: Long = 60_000L): Boolean {
+            val normFolder = folderPath.lowercase().replace('\\', '/')
+            val normName = titleOrName.lowercase()
+
+            if (JUNK_FOLDER_KEYWORDS.any { normFolder.contains(it) }) return true
+
+            // WhatsApp Voice Notes naming format (AUD-..., PTT-...)
+            if ((normName.startsWith("aud-") || normName.startsWith("ptt-")) &&
+                (normFolder.contains("whatsapp") || normFolder.contains("media"))
+            ) {
+                return true
+            }
+
+            // Audio sangat pendek (< 10 detik) yang berada di luar folder musik
+            if (durationMs in 1..9_999L && !normFolder.contains("music")) {
+                return true
+            }
+
+            return false
+        }
     }
 
     /** Mengambil daftar lagu dari cache database Room lokal (sangat cepat, 0-10ms). */
-    suspend fun getCachedTracks(): List<Track> = withContext(Dispatchers.IO) {
-        trackDao.getAllTracks().map { it.toDomain() }
+    suspend fun getCachedTracks(enabledFolders: List<String> = emptyList()): List<Track> = withContext(Dispatchers.IO) {
+        trackDao.getAllTracks().map { it.toDomain() }.filter { track ->
+            if (isJunkAudio(track.folderPath, track.title, track.durationMs)) return@filter false
+            if (enabledFolders.isNotEmpty()) {
+                val normFolder = track.folderPath.lowercase().trimEnd('/', '\\')
+                enabledFolders.any { selected ->
+                    val normSelected = selected.lowercase().trimEnd('/', '\\')
+                    normFolder == normSelected || normFolder.startsWith("$normSelected/")
+                }
+            } else {
+                true
+            }
+        }
     }
 
     /** Menghitung jumlah lagu tersimpan di database cache. */
@@ -50,7 +106,10 @@ class LibraryRepository(private val context: Context) {
      * mencari dan mem-parsing berkas CUE sheet (.cue),
      * lalu memperbarui cache database Room.
      */
-    suspend fun syncFromMediaStore(onProgress: ((String) -> Unit)? = null): List<Track> = withContext(Dispatchers.IO) {
+    suspend fun syncFromMediaStore(
+        enabledFolders: List<String> = emptyList(),
+        onProgress: ((String) -> Unit)? = null
+    ): List<Track> = withContext(Dispatchers.IO) {
         onProgress?.invoke("Membaca data audio media...")
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
@@ -97,7 +156,26 @@ class LibraryRepository(private val context: Context) {
                 val fileName = if (rawPath.contains("/")) rawPath.substringAfterLast("/") else ""
                 val rawTrackNo = if (trackCol >= 0) c.getInt(trackCol) else 0
                 val trackNo = if (rawTrackNo >= 1000) rawTrackNo % 1000 else rawTrackNo
+                val durationMs = c.getLong(durCol)
                 val sizeBytes = if (sizeCol >= 0) c.getLong(sizeCol) else 0L
+
+                // 1. Abaikan berkas sampah non-musik (WhatsApp, Telegram, rekaman suara, dsb)
+                if (isJunkAudio(folder, fileName, durationMs)) {
+                    continue
+                }
+
+                // 2. Jika user menentukan folder musik terpilih (Whitelist), batasi hanya dalam folder tersebut
+                if (enabledFolders.isNotEmpty()) {
+                    val isInSelectedFolder = enabledFolders.any { selected ->
+                        val normSelected = selected.lowercase().trimEnd('/', '\\')
+                        val normFolder = folder.lowercase().trimEnd('/', '\\')
+                        normFolder == normSelected || normFolder.startsWith("$normSelected/")
+                    }
+                    if (!isInSelectedFolder) {
+                        continue
+                    }
+                }
+
                 val stat = existingStats[id]
 
                 if (folder.isNotEmpty()) {
@@ -159,22 +237,28 @@ class LibraryRepository(private val context: Context) {
 
         // 1. Pindai folder-folder dari lagu yang ditemukan
         folders.forEach { folderPath ->
-            scanDirForCues(File(folderPath))
-            // Juga cek 1 level di atas folder (parent directory)
-            File(folderPath).parentFile?.let { parent ->
-                scanDirForCues(parent, currentDepth = 0, maxDepth = 1)
+            if (!isJunkAudio(folderPath)) {
+                scanDirForCues(File(folderPath))
+                // Juga cek 1 level di atas folder (parent directory)
+                File(folderPath).parentFile?.let { parent ->
+                    if (!isJunkAudio(parent.absolutePath)) {
+                        scanDirForCues(parent, currentDepth = 0, maxDepth = 1)
+                    }
+                }
             }
         }
 
-        // 2. Pindai lokasi standar Music & Download
-        val standardMusicDirs = listOf(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-            File("/storage/emulated/0/Music"),
-            File("/storage/emulated/0/Download"),
-        )
-        standardMusicDirs.forEach { dir ->
-            if (dir.exists()) {
+        // 2. Pindai lokasi folder pilihan / standar musik
+        val searchDirs = if (enabledFolders.isNotEmpty()) {
+            enabledFolders.map { File(it) }
+        } else {
+            listOf(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
+                File("/storage/emulated/0/Music"),
+            )
+        }
+        searchDirs.forEach { dir ->
+            if (dir.exists() && !isJunkAudio(dir.absolutePath)) {
                 scanDirForCues(dir, currentDepth = 0, maxDepth = 4)
             }
         }
@@ -198,6 +282,18 @@ class LibraryRepository(private val context: Context) {
                     val name = if (nameCol >= 0) cursor.getString(nameCol) ?: "" else ""
                     val resolvedName = name.ifEmpty { p.substringAfterLast("/") }
                     val resolvedFolder = if (p.contains("/")) p.substringBeforeLast("/") else ""
+
+                    if (isJunkAudio(resolvedFolder, resolvedName)) continue
+
+                    if (enabledFolders.isNotEmpty()) {
+                        val isInside = enabledFolders.any { selected ->
+                            val normSelected = selected.lowercase().trimEnd('/', '\\')
+                            val normFolder = resolvedFolder.lowercase().trimEnd('/', '\\')
+                            normFolder == normSelected || normFolder.startsWith("$normSelected/")
+                        }
+                        if (!isInside) continue
+                    }
+
                     val uri = ContentUris.withAppendedId(filesUri, id)
                     if (p.isNotEmpty() || resolvedName.isNotEmpty()) {
                         if (cueFiles.none { it.path.equals(p, ignoreCase = true) }) {
