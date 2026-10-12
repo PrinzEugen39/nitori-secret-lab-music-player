@@ -97,11 +97,55 @@ class PlaybackService : MediaSessionService() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                // Jika file audio hilang / tidak terbaca, lewati ke lagu berikutnya agar tidak macet
+                val failedItem = player.currentMediaItem
+                val failedIndex = player.currentMediaItemIndex
+                val title = failedItem?.mediaMetadata?.title?.toString().orEmpty()
+                val errorMsg = getString(com.prinzeugen.nitorimusic.R.string.failed_to_play_file)
+                val toastText = if (title.isNotEmpty()) "$title\n$errorMsg" else errorMsg
+
+                android.widget.Toast.makeText(applicationContext, toastText, android.widget.Toast.LENGTH_SHORT).show()
+
+                // Jika file audio hilang / tidak terbaca, buang dari antrean dan lewati ke lagu berikutnya agar tidak macet
                 if (player.hasNextMediaItem()) {
                     player.seekToNextMediaItem()
+                    if (failedIndex in 0 until player.mediaItemCount) {
+                        player.removeMediaItem(failedIndex)
+                    }
                     player.prepare()
                     player.play()
+                } else {
+                    if (failedIndex in 0 until player.mediaItemCount) {
+                        player.removeMediaItem(failedIndex)
+                    }
+                    player.pause()
+                }
+
+                // Trigger self-healing & rescan: hapus berkas hilang dari DB dan sinkronkan antrean
+                val failedTrackId = failedItem?.mediaId?.substringBefore('_')?.toLongOrNull()
+                if (failedTrackId != null) {
+                    serviceScope.launch(Dispatchers.IO) {
+                        val db = AppDatabase.getInstance(applicationContext)
+                        db.trackDao().deleteById(failedTrackId)
+
+                        val settings = SettingsStore(applicationContext)
+                        val configured = settings.selectedMusicFolders.first()
+                        val enabledFolders = configured.filter { it.isEnabled }.map { it.path }
+                        val repo = com.prinzeugen.nitorimusic.data.LibraryRepository(applicationContext)
+                        val updatedTracks = repo.syncFromMediaStore(enabledFolders = enabledFolders)
+
+                        // Bersihkan lagu lain yang mungkin ikut terhapus di folder tersebut dari queue aktif
+                        val validIds = updatedTracks.map { it.id }.toSet()
+                        withContext(Dispatchers.Main) {
+                            val count = player.mediaItemCount
+                            val invalidIndices = (0 until count).filter { idx ->
+                                val tId = player.getMediaItemAt(idx).mediaId.substringBefore('_').toLongOrNull()
+                                tId != null && tId !in validIds
+                            }.reversed()
+                            for (idx in invalidIndices) {
+                                player.removeMediaItem(idx)
+                            }
+                        }
+                    }
                 }
             }
         })

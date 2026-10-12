@@ -13,6 +13,8 @@ import com.prinzeugen.nitorimusic.data.db.AppDatabase
 import com.prinzeugen.nitorimusic.data.db.entity.TrackEntity
 import com.prinzeugen.nitorimusic.domain.model.Track
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -94,6 +96,10 @@ class LibraryRepository(private val context: Context) {
     suspend fun getCachedTrackCount(): Int = withContext(Dispatchers.IO) {
         trackDao.getTrackCount()
     }
+
+    /** Mengamati perubahan database lagu secara real-time */
+    fun observeCachedTracks(): Flow<List<Track>> =
+        trackDao.observeAllTracks().map { list -> list.map { it.toDomain() } }
 
     private data class CueFileInfo(
         val path: String,

@@ -173,6 +173,7 @@
     <string name="now_playing_unknown_artist">Unknown artist</string>
     <string name="now_playing_select_track">Select a song to play</string>
     <string name="cue_badge">CUE</string>
+    <string name="failed_to_play_file">Failed to play file!</string>
 
     <!-- Most Played -->
     <string name="most_played_empty_title">No Play History Yet</string>

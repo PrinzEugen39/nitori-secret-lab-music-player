@@ -32,6 +32,9 @@ interface TrackDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tracks: List<TrackEntity>)
 
+    @Query("DELETE FROM cached_tracks WHERE id = :trackId OR parentTrackId = :trackId")
+    suspend fun deleteById(trackId: Long)
+
     @Query("DELETE FROM cached_tracks")
     suspend fun clearAll()
 

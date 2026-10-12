@@ -150,6 +150,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 _isInitialLoaded.value = true
             }
         }
+        viewModelScope.launch {
+            repository.observeCachedTracks().collect { cached ->
+                if (cached.isNotEmpty()) {
+                    _tracks.value = cached
+                    playback.syncQueueWithAvailableTracks(cached.map { it.id }.toSet())
+                }
+            }
+        }
     }
 
     private fun observePlayCountTracking() {
@@ -256,6 +264,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     _scanStatus.value = status
                 }
                 _tracks.value = synced
+                playback.syncQueueWithAvailableTracks(synced.map { it.id }.toSet())
             } finally {
                 _isScanning.value = false
                 _scanStatus.value = null
@@ -288,6 +297,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     _scanStatus.value = status
                 }
                 _tracks.value = synced
+                playback.syncQueueWithAvailableTracks(synced.map { it.id }.toSet())
             } finally {
                 _isScanning.value = false
                 _scanStatus.value = null

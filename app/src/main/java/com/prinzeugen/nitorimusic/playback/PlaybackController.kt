@@ -194,6 +194,21 @@ class PlaybackController(private val context: Context) {
         if (index >= 0) removeAt(index)
     }
 
+    /** Sinkronisasi antrean dengan lagu-lagu yang masih valid/tersedia di pustaka */
+    fun syncQueueWithAvailableTracks(validTrackIds: Set<Long>) {
+        val c = controller ?: return
+        val currentQueue = _state.value.queue
+        if (currentQueue.isEmpty()) return
+        val invalidIndices = currentQueue.mapIndexedNotNull { index, item ->
+            val tId = item.trackId
+            if (tId != null && tId !in validTrackIds) index else null
+        }.reversed()
+
+        for (idx in invalidIndices) {
+            removeAt(idx)
+        }
+    }
+
     fun clearQueue() {
         controller?.clearMediaItems()
     }
