@@ -99,13 +99,13 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
     val shuffleSpread by viewModel.shuffleSpread.collectAsState()
     val allTracks by viewModel.tracks.collectAsState()
     val currentTrack = remember(state.currentMediaId, allTracks) {
-        val tId = state.currentMediaId?.toLongOrNull()
+        val tId = state.currentTrackId
         allTracks.find { it.id == tId }
     }
 
     // Dynamic Material You Dominant Color Extraction dari Cover Art
     LaunchedEffect(state.currentMediaId) {
-        val tId = state.currentMediaId?.toLongOrNull()
+        val tId = state.currentTrackId
         if (tId != null) {
             val bmp = withContext(Dispatchers.IO) {
                 ArtworkLoader.loadArtwork(context, tId, null, 120)
@@ -203,7 +203,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
         }
     }
 
-    val trackId = state.currentMediaId?.toLongOrNull()
+    val trackId = state.currentTrackId
     val duration = state.durationMs.coerceAtLeast(1L)
     val queue = state.queue
     val safeIndex = if (state.currentIndex in queue.indices) state.currentIndex else 0
@@ -374,7 +374,7 @@ fun NowPlayingScreen(viewModel: MainViewModel, onBack: () -> Unit, onOpenQueue: 
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if ((state.currentMediaId?.toLongOrNull() ?: 0L) < 0L) {
+                    if ((state.currentTrackId ?: 0L) < 0L) {
                         Spacer(Modifier.width(6.dp))
                         com.prinzeugen.nitorimusic.ui.components.CueBadge()
                     }

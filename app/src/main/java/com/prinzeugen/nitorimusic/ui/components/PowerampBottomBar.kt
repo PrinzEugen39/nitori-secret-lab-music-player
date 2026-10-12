@@ -159,7 +159,7 @@ fun PowerampBottomBar(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ArtworkImage(
-                            trackId = state.currentMediaId?.toLongOrNull(),
+                            trackId = state.currentTrackId,
                             sizePx = 120,
                             modifier = Modifier
                                 .size(42.dp)

@@ -63,6 +63,7 @@ fun QueueScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val state by playback.state.collectAsState()
     val allTracks by viewModel.tracks.collectAsState()
     var targetTrackForDetail by remember { mutableStateOf<Track?>(null) }
+    var targetQueueItemForDetail by remember { mutableStateOf<QueueItem?>(null) }
 
     val listState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(listState) { from, to ->
@@ -77,10 +78,13 @@ fun QueueScreen(viewModel: MainViewModel, onBack: () -> Unit) {
         val track = targetTrackForDetail!!
         TrackDetailActionDialog(
             track = track,
-            audioSpecs = if (track.id.toString() == state.currentMediaId) state.audioSpecs else null,
+            audioSpecs = if (track.id == state.currentTrackId) state.audioSpecs else null,
             onPlayNext = { playback.playNext(track) },
             onAddToQueue = { playback.addToQueue(track) },
-            onRemoveFromQueue = { playback.removeById(track.id.toString()) },
+            onRemoveFromQueue = {
+                targetQueueItemForDetail?.let { playback.removeById(it.mediaId) }
+                    ?: playback.removeByTrackId(track.id)
+            },
             onGoToAlbum = { albumId ->
                 val album = viewModel.getAlbums().find { it.id == albumId }
                 if (album != null) {
@@ -98,7 +102,10 @@ fun QueueScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             onChangeAlbumArt = { albumId, uri ->
                 viewModel.saveCustomAlbumArt(albumId, uri)
             },
-            onDismiss = { targetTrackForDetail = null }
+            onDismiss = {
+                targetTrackForDetail = null
+                targetQueueItemForDetail = null
+            }
         )
     }
 
@@ -127,6 +134,7 @@ fun QueueScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         isCurrent = index == state.currentIndex,
                         onClick = { playback.jumpTo(index) },
                         onLongClick = {
+                            targetQueueItemForDetail = item
                             targetTrackForDetail = allTracks.find { it.id == item.trackId }
                         },
                         onRemove = { playback.removeById(item.mediaId) },

@@ -25,7 +25,7 @@ data class QueueItem(
     val artist: String,
     val album: String = "",
 ) {
-    val trackId: Long? get() = mediaId.toLongOrNull()
+    val trackId: Long? get() = mediaId.substringBefore('_').toLongOrNull()
 }
 
 data class AudioSpecs(
@@ -67,7 +67,9 @@ data class PlaybackUiState(
     val sleepTimerMinutesLeft: Int = 0,
     val sleepTimerSecondsLeft: Int = 0,
     val audioSpecs: AudioSpecs? = null,
-)
+) {
+    val currentTrackId: Long? get() = currentMediaId?.substringBefore('_')?.toLongOrNull()
+}
 
 /** Wrapper MediaController untuk UI. Service tetap pemilik player dan queue. */
 class PlaybackController(private val context: Context) {
@@ -187,6 +189,11 @@ class PlaybackController(private val context: Context) {
         if (index >= 0) removeAt(index)
     }
 
+    fun removeByTrackId(trackId: Long) {
+        val index = _state.value.queue.indexOfFirst { it.trackId == trackId }
+        if (index >= 0) removeAt(index)
+    }
+
     fun clearQueue() {
         controller?.clearMediaItems()
     }
@@ -296,7 +303,7 @@ class PlaybackController(private val context: Context) {
         }
         val isCueItem = item?.clippingConfiguration?.let {
             it.startPositionMs > 0L || (it.endPositionMs != C.TIME_END_OF_SOURCE && it.endPositionMs != C.TIME_UNSET)
-        } == true || (item?.mediaId?.toLongOrNull()?.let { it < 0L } == true)
+        } == true || (item?.mediaId?.substringBefore('_')?.toLongOrNull()?.let { it < 0L } == true)
         val specs = extractAudioSpecs(player, isCueItem)
         _state.value = PlaybackUiState(
             currentMediaId = item?.mediaId,
@@ -356,8 +363,9 @@ class PlaybackController(private val context: Context) {
     }
 
     private fun Track.toMediaItem(): MediaItem {
+        val uid = java.util.UUID.randomUUID().toString().take(8)
         val builder = MediaItem.Builder()
-            .setMediaId(id.toString())
+            .setMediaId("${id}_$uid")
             .setUri(uri)
             .setRequestMetadata(
                 MediaItem.RequestMetadata.Builder()

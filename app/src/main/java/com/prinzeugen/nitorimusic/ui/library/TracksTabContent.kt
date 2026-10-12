@@ -102,7 +102,7 @@ fun TracksTabContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 itemsIndexed(tracks, key = { _, t -> t.id }) { index, track ->
-                    val isCurrent = currentMediaId == track.id.toString()
+                    val isCurrent = currentMediaId?.substringBefore('_')?.toLongOrNull() == track.id
                     val isSelected = track.id in selectedTrackIds
 
                     Column(
@@ -207,7 +207,7 @@ fun TracksTabContent(
                 )
             ) {
                 itemsIndexed(tracks, key = { _, t -> t.id }) { index, track ->
-                    val isCurrent = currentMediaId == track.id.toString()
+                    val isCurrent = currentMediaId?.substringBefore('_')?.toLongOrNull() == track.id
                     val isSelected = track.id in selectedTrackIds
 
                     Row(

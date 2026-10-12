@@ -126,7 +126,7 @@ fun ArtistDetailScreen(
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             itemsIndexed(tracks, key = { _, t -> t.id }) { index, track ->
-                val isCurrent = playback.currentMediaId == track.id.toString()
+                val isCurrent = playback.currentTrackId == track.id
                 Row(
                     Modifier
                         .fillMaxWidth()

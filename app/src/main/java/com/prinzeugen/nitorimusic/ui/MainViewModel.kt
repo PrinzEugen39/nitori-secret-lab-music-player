@@ -167,7 +167,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 if (!hasCountedCurrent && state.isPlaying && currentMediaId != null) {
-                    val tId = currentMediaId.toLongOrNull()
+                    val tId = currentMediaId.substringBefore('_').toLongOrNull()
                     val dur = state.durationMs
                     val pos = playback.positionMs()
                     val thresholdPercent = countAsPlayedThreshold.value
@@ -399,7 +399,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setShuffleMode(mode: ShuffleMode) {
         val currentQueue = playback.state.value.queue
         val currentMediaId = playback.state.value.currentMediaId
-        val currentTrackId = currentMediaId?.toLongOrNull()
+        val currentTrackId = currentMediaId?.substringBefore('_')?.toLongOrNull()
         val currentPos = playback.positionMs()
 
         _shuffleMode.value = mode
@@ -412,10 +412,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val currentTrack = _tracks.value.find { it.id == currentTrackId }
             baseTracks = if (currentTrack != null) {
                 getTracksForAlbum(currentTrack.albumId).ifEmpty {
-                    _tracks.value.filter { t -> currentQueue.any { it.mediaId == t.id.toString() } }
+                    _tracks.value.filter { t -> currentQueue.any { it.trackId == t.id } }
                 }
             } else {
-                _tracks.value.filter { t -> currentQueue.any { it.mediaId == t.id.toString() } }
+                _tracks.value.filter { t -> currentQueue.any { it.trackId == t.id } }
             }
             originalQueueTracks = baseTracks
         }
@@ -482,12 +482,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (currentQueue.isEmpty()) return
 
         val currentMediaId = playback.state.value.currentMediaId ?: return
-        val currentTrackId = currentMediaId.toLongOrNull() ?: return
+        val currentTrackId = currentMediaId.substringBefore('_').toLongOrNull() ?: return
         val currentPos = playback.positionMs()
 
         var baseTracks = originalQueueTracks
         if (baseTracks.isEmpty()) {
-            baseTracks = _tracks.value.filter { t -> currentQueue.any { it.mediaId == t.id.toString() } }
+            baseTracks = _tracks.value.filter { t -> currentQueue.any { it.trackId == t.id } }
             originalQueueTracks = baseTracks
         }
 

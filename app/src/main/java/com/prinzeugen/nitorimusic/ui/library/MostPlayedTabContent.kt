@@ -138,7 +138,7 @@ fun MostPlayedTabContent(
             contentPadding = PaddingValues(end = 22.dp, bottom = 12.dp)
         ) {
             itemsIndexed(tracks, key = { _, t -> t.id }) { index, track ->
-                val isCurrent = currentMediaId == track.id.toString()
+                val isCurrent = currentMediaId?.substringBefore('_')?.toLongOrNull() == track.id
 
                 Row(
                     Modifier

@@ -199,7 +199,7 @@ class PlaybackService : MediaSessionService() {
                         ?: m.requestMetadata.mediaUri?.toString()
                         ?: ContentUris.withAppendedId(
                             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                            m.mediaId.toLongOrNull() ?: 0L
+                            m.mediaId.substringBefore('_').toLongOrNull() ?: 0L
                         ).toString()
                     val albumId = m.mediaMetadata.artworkUri?.lastPathSegment?.toLongOrNull() ?: 0L
                     val clipConfig = m.clippingConfiguration
@@ -210,7 +210,7 @@ class PlaybackService : MediaSessionService() {
                     items.add(
                         SavedQueueItem(
                             position = i,
-                            trackId = m.mediaId.toLongOrNull() ?: 0L,
+                            trackId = m.mediaId.substringBefore('_').toLongOrNull() ?: 0L,
                             uriString = uriStr,
                             title = m.mediaMetadata.title?.toString().orEmpty(),
                             artist = m.mediaMetadata.artist?.toString().orEmpty(),
@@ -261,8 +261,9 @@ class PlaybackService : MediaSessionService() {
             Uri.parse("content://media/external/audio/albumart"),
             albumId
         )
+        val uid = java.util.UUID.randomUUID().toString().take(8)
         val builder = MediaItem.Builder()
-            .setMediaId(trackId.toString())
+            .setMediaId("${trackId}_$uid")
             .setUri(uri)
             .setRequestMetadata(
                 MediaItem.RequestMetadata.Builder()
@@ -315,7 +316,7 @@ class PlaybackService : MediaSessionService() {
             if (item.localConfiguration?.uri != null) return item
             val uri = item.requestMetadata.mediaUri ?: ContentUris.withAppendedId(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                item.mediaId.toLongOrNull() ?: 0L
+                item.mediaId.substringBefore('_').toLongOrNull() ?: 0L
             )
             return item.buildUpon().setUri(uri).build()
         }
