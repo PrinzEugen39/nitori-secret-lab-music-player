@@ -105,6 +105,7 @@ fun TrackDetailActionDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
                 // Header: Album Art, Judul, Artis • Album, Format & Durasi

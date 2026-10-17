@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -47,7 +49,11 @@ fun ShuffleModeDialog(
             tonalElevation = 6.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(Modifier.padding(vertical = 12.dp)) {
+            Column(
+                Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 12.dp)
+            ) {
                 // Item 1: Shuffle Off
                 ShuffleModeItem(
                     icon = Icons.Rounded.Shuffle,

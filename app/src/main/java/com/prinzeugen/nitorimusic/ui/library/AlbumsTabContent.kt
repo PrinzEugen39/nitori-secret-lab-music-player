@@ -119,12 +119,20 @@ fun AlbumsTabContent(
     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isTablet = configuration.screenWidthDp >= 600
+    val effectiveColumns = when {
+        isTablet && isLandscape -> (gridColumns + 2).coerceIn(3, 8)
+        isTablet || isLandscape -> (gridColumns + 1).coerceIn(2, 6)
+        else -> gridColumns.coerceIn(2, 5)
+    }
 
     Box(Modifier.fillMaxSize()) {
         if (layout == ViewLayout.GRID) {
             LazyVerticalGrid(
                 state = gridState,
-                columns = GridCells.Fixed(gridColumns.coerceIn(2, 5)),
+                columns = GridCells.Fixed(effectiveColumns),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 12.dp,
